@@ -1,32 +1,103 @@
-#this just seems to contain a bunch of classes describing the game state
-#yeah... that seems good
-
+from __future__ import print_function
+#from __future__ import division    #division isnt actually used yet
+import random
 
 class game(object):
     def __init__(self,numPlayers=2):
         #create the initial starting piles of cards. 
+        self._players = []
+        for i in range(numPlayers):
+            self._players.append(player())
+
+    def getPlayers(self):
+        return self._players
+    
+    def getCurrentPlayer(self):
         pass
+
+class player(object):
+    def __init__(self,game):
+        self._deck = deck()
+        self._game = game
+        for i in range(7):
+            self._hand.append(gold1())
+        for i in range(3):
+            self._hand.append(victory1())
+
+    def playCard(self,card):
+        pass
+
+    def drawCard(self,card);
+        pass
+
+    def endTurn(self):
+        pass
+
+    def getGame(self):
+        return self._game
+
+    def getDeck(self):
+        return self._deck
 
 #Any pile of cards
 class pile(object):
-    pass
+    def __init__(self):
+        self._cards = []
+
+    def add(self,newCard):
+        #todo: make sure the newCard is actually a card
+        self._cards.append(newCard)
+
+    def __len__(self):
+        len(self._cards)
+
+    def __getitem__(self,i):
+        return self._cards[i]
+
+    def __contains__(self,item):
+        return item in self._cards
 
 class deck(pile):
-    pass
+    def __init__(self,player):
+        self._player = player
+        self._discard = pile()
+        self._hand = pile()
+        self._library = pile()
 
-class discard(pile):
-    pass
+    def draw(self):
+        pass
+
+    #add implies a card goes to your discard
+    #usually this is when the card says you "gain" a card
+    def add(self,newCard):
+        self._discard.add(newCard)
+
+    def getPlayer(self):
+        return self._player
+
+    @property
+    def _cards(self):
+        return self._discard + self._hand + self._library
 
 class trash(pile):
-    pass
+    def __init__(self,game):
+        self._game = game
 
 class card(object):
-    def __init__(self,deck):
+    def __init__(self,pile):
         self._victoryPoints = 0
         self._cost = 0
+        self._pile = pile
 
+    #dummy method. override in child classes
     def activate(self):
         pass
+
+    def move(self,newPile):
+        pass
+
+    def getPile(self):
+        return self._pile
 
     @property
     def victoryPoints(self):
@@ -42,7 +113,6 @@ class gold1(card):
     def __init__(self):
         card.__init__(self)
         self._cost = 0
-    
 
 #Cost: 3
 class gold2(card):
@@ -61,19 +131,22 @@ class gold3(card):
 class victory1(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 2
+        self._victoryPoints = 1
 
 #Cost: 5
 class victory3(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
+        self._victoryPoints = 2
 
 #Cost: 8
 class victory6(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 8
+        self._victoryPoints = 3
 
 #Cost: 2
 #+1 Action
@@ -82,14 +155,14 @@ class victory6(card):
 class cellar(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 2
 
 #Cost: 2
 #Trash up to 4 cards from your hand
 class chapel(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 2
 
 #Cost: 2
 #+2 Cards
@@ -98,7 +171,7 @@ class chapel(card):
 class moat(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 2
 
 #Cost: 2
 #+2
@@ -106,7 +179,7 @@ class moat(card):
 class chancellor(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 2
 
 #Cost: 3
 #+1 Card
@@ -114,7 +187,7 @@ class chancellor(card):
 class village(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 3
 
 #Cost: 3
 #+1 Buy
@@ -122,14 +195,14 @@ class village(card):
 class woodcutter(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 3
 
 #Cost: 3
 #Gain a card costing up to $4
 class workshop(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 3
 
 #Cost: 4
 #Gain a silver card; put it on top of your deck. Each other player reveals a
@@ -138,28 +211,32 @@ class workshop(card):
 class bureaucrat(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #Trash this card. Gain a card costing up to $5
 class feast(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #Worth 1 Victory for every 10 cards in your deck (rounded down)
 class gardens(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
+    
+    @property
+    def _victoryPoints(self):
+        return len(self.getPile.getPlayer.getDeck)//10
 
 #Cost: 4
 #Trash a Copper from your hand. If you do, +$3
 class moneylender(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #Trash a card from your hand. Gain a card costing up to $2 more than the trashed
@@ -167,14 +244,14 @@ class moneylender(card):
 class remodel(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #+3 cards
 class smithy(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #+1 card
@@ -184,7 +261,7 @@ class smithy(card):
 class spy(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #Each other player reveals the top 2 cards of his deck. If they revealed any
@@ -193,14 +270,14 @@ class spy(card):
 class thief(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 4
 #Choose an Action card in your hand. Play it twice
 class throneRoom(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 4
 
 #Cost: 5
 #+4 Cards
@@ -209,7 +286,7 @@ class throneRoom(card):
 class councilRoom(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #+2 Actions
@@ -218,7 +295,7 @@ class councilRoom(card):
 class festival(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #+2 Cards
@@ -226,7 +303,7 @@ class festival(card):
 class laboratory(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #Draw until you have 7 cards in hand. You may set aside any Action cards drawn
@@ -235,7 +312,7 @@ class laboratory(card):
 class library(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #+1 Card
@@ -245,7 +322,7 @@ class library(card):
 class market(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #Trash a Treasure card from your hand. Gain a Treasure card costing up to $3
@@ -253,7 +330,7 @@ class market(card):
 class mine(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 5
 #+2 Cards
@@ -261,7 +338,7 @@ class mine(card):
 class witch(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 5
 
 #Cost: 6
 #Reveal cards from your deck until you reveal 2 Treasure cards. Put those
@@ -269,4 +346,4 @@ class witch(card):
 class adventurer(card):
     def __init__(self):
         card.__init__(self)
-        self._cost = 0
+        self._cost = 6
