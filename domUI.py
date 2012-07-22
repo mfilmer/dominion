@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import CLI
 import Dominion
+import readline
 
 class UI(object):
     def __init__(self):
@@ -12,18 +13,49 @@ class UI(object):
 
     def createGame(self,players):
         self._game = Dominion.game(players)
+        self.nextTurn()
+        self._stores = self._game.getStores()
 
     def promptFCN(self):
-        player = self._game.getCurrentPlayer()
-        name = player.getName()
-        pid = player.getID()
-        self.listCards(player)
+        name = self._player.getName()
+        pid = self._player.getID()
         return str(pid) + ': ' + name + '> '
 
-    def listCards(self,player):
+    def listCards(self,cards):
         for index,(count,name) in \
-                enumerate(self.countCards(player.getDeck().getHand())):
+                enumerate(self.countCards(cards)):
             print(str(index + 1) + ': ' + '(' + str(count) + ') ' + name)
+
+    def listStores(self):
+        for i,store in enumerate(self._stores):
+            print(str(i+1) + ': (' + str(len(store)) + ') $' + \
+                    str(store.getCost()) + ' ' + store.getName())
+
+    def nextPhase(self):
+        self._turn.advancePhase()
+        self._phase = self._turn.getPhase()
+        if self._phase == 0:
+            if self.countCardType('Action') == 0:
+                self.actionPhaseDisplay(True)
+                self.nextPhase()
+            else:
+                self.actionPhaseDisplay(False)
+        elif self._phase == 1:
+            if self._turn.getMoney() == 0:
+                self.buyPhaseDisplay(True)
+                self.nextPhase()
+            else:
+                self.buyPhaseDisplay(False)
+        elif self._phase == 3:
+            self.nextTurn()
+            self._phase = self._turn.getPhase()
+
+    def nextTurn(self):
+        self._turn = self._game.next()
+        self._phase = self._turn.getPhase()
+        self._player = self._turn.getPlayer()
+        self._deck = self._player.getDeck()
+        self._hand = self._deck.getHand()
 
     def countCards(self,cards):
         counts = []
@@ -38,10 +70,59 @@ class UI(object):
                 counts.append(1)
         return zip(counts,names)
 
+    def getCardIndex(self,name):
+        for i,card in enumerate(self._hand):
+            if card.getName() == name:
+                return i
+        return None
+
+    def countCardType(self,type):
+        count = 0
+        for card in self._hand:
+            if card.getType == type:
+                count += 1
+        return count
+
+    def actionPhaseDisplay(self,skip):
+        print(chr(27) + '[2J')
+        print(self._player.getName() + '\'s Turn:')
+        self.listCards(self._hand)
+        if skip:
+            print('No action cards in hand, skipping action phase')
+            self.nextPhase()
+        else:
+            print('Action Phase:')
+
+    def buyPhaseDisplay(self,skip):
+        if skip:
+            print('No money, skipping buy phase')
+        else:
+            print('Buy Phase:')
+            self.listStores()
+            print('Remaining Money: ' + str(self._turn.getMoney()))
+
     #User (External) Commands
-    def comListCards(command,varList):
-        player = self._game.getCurrentPlayer()
-        self.listCards(player)
+    def comListHand(self,command,varList):
+        print('Cards in Hand:')
+        self.listCards(self._player.getDeck().getHand())
+
+    def comListDiscard(self,command,varList):
+        print('Cards in Discard:')
+        self.listCards(self._player.getDeck().getDiscard())
+
+    def comNextPhase(self,command,varList):
+        self.nextPhase()
+
+    def comPlayName(self,command,varList):
+        index =  self.getCardIndex(varList['name'])
+        if index is None:
+            print('Card is not in hand')
+        else:
+            self._hand[index].play()
+
+    #todo: finish
+    def comBuyCard(self,command,varList):
+        pass
 
 def main():
     cli = CLI.cli()
@@ -54,8 +135,14 @@ def main():
         newPlayer = raw_input('Player Name: ')
     gameUI.createGame(players)
     cli.setPrompt(gameUI.promptFCN)
-    cli.addCommand('cards',gameUI.comListCards)
+    cli.addCommand('hand',gameUI.comListHand)
+    cli.addCommand('discard',gameUI.comListDiscard)
+    cli.addCommand('next',gameUI.comNextPhase)
+    cli.addCommand('buy %sname',gameUI.comBuyCard)
+    cli.addCommand('play %sname',gameUI.comPlayName)
 
+    #Start Game
+    gameUI.actionPhaseDisplay(False)
     cli.run()
 
     #todo: setup CLI

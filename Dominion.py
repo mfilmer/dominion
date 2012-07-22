@@ -2,6 +2,8 @@ from __future__ import print_function
 #from __future__ import division    #division isnt actually used yet
 import random
 
+import errors
+
 DEBUG = True
 
 class game(object):
@@ -39,6 +41,9 @@ class game(object):
     def genPlayerID(self):
         self._lastPlayerID += 1
         return self._lastPlayerID
+
+    def getStores(self):
+        return self._stores
 
     #todo: implement
     def _isGameOver(self):
@@ -112,18 +117,6 @@ class turn(object):
         self._actions = 1
         self._buys = 1
 
-    def buy(self,store):
-        if len(store) == 0:
-            if DEBUG:
-                print('Store has no remaining cards')
-            return False
-        if self._phase != self.buy:
-            if DEBUG:
-                print('Cards must be purchased during the buy phase')
-            return False
-        store[0].move(self._player.getDeck().getLibrary())
-        return True
-
     def getPlayer(self):
         return self._player
 
@@ -139,10 +132,27 @@ class turn(object):
     def getMoney(self):
         return self._money
 
+    def buy(self,store):
+        if len(store) == 0:
+            raise EmptyPile
+        cost = store.getCost()
+        if self._money < cost:
+            raise InsufficientFunds
+        self._money -= cost
+        store.buy(self._player)
+
     def advancePhase(self):
         if self._phase + 1 > phase.wait:
             raise Exception('Phase advanced past last phase')
         self._phase += 1
+        if self._phase == phase.buy:
+            treasureList = []
+            #todo: verify if doing the double loop is necessary
+            for card in self._player.getDeck().getHand():
+                if card.getType() == 'Treasure':
+                    treasureList.append(card)
+            while len(treasureList):
+                treasureList.pop().play()
         if self._phase == phase.cleanup:
             self._player.getDeck().cleanup()
             self._phase += 1
@@ -164,6 +174,7 @@ class card(object):
         self._cost = 0
         self._playablePhases = [phase.action]
         self._name = '<Unnammed>'
+        self._type = 'Action'
         self._fullText = '<Blank>'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
@@ -190,8 +201,14 @@ class card(object):
     def getPile(self):
         return self._pile
 
+    def getCost(self):
+        return self._cost
+
     def getName(self):
         return self._name
+
+    def getType(self):
+        return self._type
 
     def getFullText(self):
         return self._fullText
@@ -272,6 +289,17 @@ class store(pile):
         pile.__init__(self,owner)
         for i in range(count):
             self._cards.append(newCard(self))
+        self._cost = self._cards[0].getCost()
+        self._name = self._cards[0].getName()
+
+    def buy(self,player):
+        self._cards[0].move(player.getDeck().getDiscard())
+
+    def getCost(self):
+        return self._cost
+
+    def getName(self):
+        return self._name
 
     def addNew(self,newCard=card):
         raise Exception('cards cannot be added to a store')
@@ -342,6 +370,7 @@ class gold1(card):
         self._cost = 0
         self._effects['money'] = 1
         self._playablePhases = [phase.buy]
+        self._type = 'Treasure'
 
 #Cost: 3
 class gold2(card):
@@ -351,6 +380,7 @@ class gold2(card):
         self._cost = 0
         self._effects['money'] = 2
         self._playablePhases = [phase.buy]
+        self._type = 'Treasure'
 
 #Cost 6
 class gold3(card):
@@ -360,6 +390,7 @@ class gold3(card):
         self._cost = 0
         self._effects['money'] = 3
         self._playablePhases = [phase.buy]
+        self._type = 'Treasure'
 
 #Land (or whatever their real name is) cards
 #todo: figure out how ot make victory cards not playable
@@ -371,6 +402,7 @@ class victory1(card):
         self._cost = 2
         self._victoryPoints = 1
         self._playablePhases = []
+        self._type = 'Victory'
 
 #Cost: 5
 class victory3(card):
@@ -380,6 +412,7 @@ class victory3(card):
         self._cost = 5
         self._victoryPoints = 2
         self._playablePhases = []
+        self._type = 'Victory'
 
 #Cost: 8
 class victory6(card):
@@ -389,6 +422,7 @@ class victory6(card):
         self._cost = 8
         self._victoryPoints = 3
         self._playablePhases = []
+        self._type = 'Victory'
 
 class curse(card):
     def __init__(self,pile):
@@ -397,6 +431,7 @@ class curse(card):
         self._cost = 0
         self._victoryPoints = -1
         self._playablePhases = []
+        self._type = 'Victory'
 
 #Cost: 2
 #+1 Action
@@ -429,6 +464,7 @@ class moat(card):
         self._name = 'Moat'
         self._cost = 2
         self._playablePhases = [phase.action,phase.wait]
+        self._type = 'Reaction'
         self._fullText = 'Cost: 2\n+2 Cards\n\
                 When another player plays an Attack card, you may reveal this \
                 from your hand. If you do, you are unaffected by that Attack.'
@@ -488,8 +524,8 @@ class bureaucrat(card):
         card.__init__(self,pile)
         self._name = 'Bureaucrat'
         self._cost = 4
-        self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \n
-        deck. Each other player reveals a Victory card from his hand and puts \n
+        self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \
+        deck. Each other player reveals a Victory card from his hand and puts \
         it on his deck (or reveals a hand with no Victory cards).'
 
 #Cost: 4
@@ -499,7 +535,7 @@ class feast(card):
         card.__init__(self,pile)
         self._name = 'Feast'
         self._cost = 4
-        self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \n
+        self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \
         $5'
 
 #Cost: 4
