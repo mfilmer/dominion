@@ -5,35 +5,40 @@ import random
 DEBUG = True
 
 class game(object):
-    def __init__(self,numPlayers=2,mode='original'):
+    def __init__(self,playerNames,mode='original'):
         self._players = []
-        self._numPlayers = numPlayers
-        for i in range(numPlayers):
-            self._players.append(player(self))
-        self._playerNum = random.randint(0,numPlayers-1)
+        self._numPlayers = len(playerNames)
+        self._lastPlayerID = 0
+        for i in range(self._numPlayers):
+            self._players.append(player(self,playerNames[i]))
+        self._playerNum = random.randint(0,self._numPlayers-1)
         self._currentPlayer = self._players[self._playerNum]
-        self._trash = trash(self)
+        self._trash = pile(self)
         #create initial stores
         self._stores = []
-        self._stores.append(store(10,victory1))
-        self._stores.append(store(10,victory3))
-        self._stores.append(store(10,victory6))
-        self._stores.append(store(10,gold1))
-        self._stores.append(store(10,gold2))
-        self._stores.append(store(10,gold3))
-        self._stores.append(store(10,curse))
+        self._stores.append(store(10,victory1,self))
+        self._stores.append(store(10,victory3,self))
+        self._stores.append(store(10,victory6,self))
+        self._stores.append(store(10,gold1,self))
+        self._stores.append(store(10,gold2,self))
+        self._stores.append(store(10,gold3,self))
+        self._stores.append(store(10,curse,self))
 
         #mode specific stores
         if mode == 'original':
-            self._stores.append(store(10,village))
-            self._stores.append(store(10,market))
-            self._stores.append(store(10,smithy))
+            self._stores.append(store(10,village,self))
+            self._stores.append(store(10,market,self))
+            self._stores.append(store(10,smithy,self))
 
     def getPlayers(self):
         return self._players
 
     def getCurrentPlayer(self):
         return self._currentPlayer
+
+    def genPlayerID(self):
+        self._lastPlayerID += 1
+        return self._lastPlayerID
 
     #todo: implement
     def _isGameOver(self):
@@ -51,19 +56,25 @@ class game(object):
         return self
 
 class player(object):
-    def __init__(self,game):
+    def __init__(self,game,name):
+        self._name = name
+        self._ID = game.genPlayerID()
         self._deck = deck(self)
         self._game = game
-        self._turn = turn(self,turn.wait)
+        self._turn = turn(self,phase.wait)
         for i in range(7):
             self._deck.addNew(gold1)
         for i in range(3):
             self._deck.addNew(victory1)
+        self._deck.cleanup()
 
     def playCard(self,card):
+        """Try to play a card. If the card was successfully played playCard()
+        returns True, if the card cannot be played, playCard() returns False"""
         if not card.isPlayable():
-            raise Exception('card not currently playable')
+            return False
         card.play()
+        return True
 
     def drawCard(self):
         self._deck.draw()
@@ -77,15 +88,24 @@ class player(object):
     def getTurn(self):
         return self._turn
 
+    def getName(self):
+        return self._name
+
+    def getID(self):
+        return self._ID
+
     def newTurn(self):
         self._turn = turn(self)
         return self._turn
 
-class turn(object):
+class phase(object):
     action = 0
     buy = 1
-    wait = 2
-    def __init__(self,player,startPhase = 0):
+    cleanup = 2
+    wait = 3
+
+class turn(object):
+    def __init__(self,player,startPhase = phase.action):
         self._player = player
         self._phase = startPhase
         self._money = 0
@@ -110,10 +130,23 @@ class turn(object):
     def getPhase(self):
         return self._phase
 
+    def getActions(self):
+        return self._actions
+
+    def getBuys(self):
+        return self._buys
+
+    def getMoney(self):
+        return self._money
+
     def advancePhase(self):
-        if self._phase + 1 > self.wait:
+        if self._phase + 1 > phase.wait:
             raise Exception('Phase advanced past last phase')
         self._phase += 1
+        if self._phase == phase.cleanup:
+            self._player.getDeck().cleanup()
+            self._phase += 1
+
 
     def _addActions(self,numActions):
         self._actions += numActions
@@ -125,28 +158,34 @@ class turn(object):
         self._buys += buys
 
 class card(object):
-    def __init__(self,pile):
-        self._pile = pile
+    def __init__(self,startPile):
+        self._pile = startPile
         self._victoryPoints = 0
         self._cost = 0
-        self._playablePhases = [turn.action]
-        self._name = 'unnammed card'
+        self._playablePhases = [phase.action]
+        self._name = '<Unnammed>'
+        self._fullText = '<Blank>'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
     #play the card. only does basic card operations
     def play(self):
-        player = self._pile.getPlayer()
+        if not self.isPlayable():
+            return False
+        player = self._pile.getOwner()
         for i in range(self._effects['cards']):
             player.drawCard()
-        player.getTurn._addActions(self._effects['actions'])
-        player.getTurn._addMoney(self._effects['money'])
-        player.getTurn._addBuys(self._effects['buys'])
+        player.getTurn()._addActions(self._effects['actions'])
+        player.getTurn()._addMoney(self._effects['money'])
+        player.getTurn()._addBuys(self._effects['buys'])
         self._specialActions()
+        self.move(self._pile.getOwner().getDeck().getField())
+        return True
 
     def move(self,destPile):
-        destPile._cards.append(self)
         self._pile._cards.remove(self)
+        destPile._cards.append(self)
+        self._pile = destPile
 
     def getPile(self):
         return self._pile
@@ -154,10 +193,34 @@ class card(object):
     def getName(self):
         return self._name
 
-    #todo: finish
+    def getFullText(self):
+        return self._fullText
+
     def isPlayable(self):
-        return self._pile.getPlayer().getTurn().getPhase() in \
-                self._playablePhases
+        #check that the card is owned by a player
+        try:
+            player = self._pile.getOwner()
+        except:
+            if DEBUG:
+                print('unplayable because card not owned by player')
+            return False
+        #check that the card is in a player's hand
+        if self._pile != player.getDeck().getHand():
+            if DEBUG:
+                print('unplayable because card not in a player\'s hand')
+            return False
+        #check that the card is playable during this phase
+        if not player.getTurn().getPhase() in self._playablePhases:
+            if DEBUG:
+                print('unplayable due to phase')
+            return False
+        #check that the player has at least 1 remaining action
+        if player.getTurn().getActions() > 0:
+            return True
+        else:
+            if DEBUG:
+                print('unplayable due to action count')
+            return False
 
     def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 
@@ -175,8 +238,9 @@ class card(object):
 
 #Any pile of cards
 class pile(object):
-    def __init__(self):
+    def __init__(self,owner):
         self._cards = []
+        self._owner = owner
 
     def addNew(self,newCard):
         """Add a new card. The card must not have existed before adding it to
@@ -185,11 +249,17 @@ class pile(object):
         #todo: make sure the newCard is actually a card
         self._cards.append(newCard(self))
 
+    def getOwner(self):
+        return self._owner
+
     def __len__(self):
         return len(self._cards)
 
     def __getitem__(self,i):
         return self._cards[i]
+
+    def __setitem__(self,i,value):
+        self._cards[i] = value
 
     def __contains__(self,item):
         return item in self._cards
@@ -198,8 +268,8 @@ class store(pile):
     """Stores are special piles that you can only take from and not ever add to.
     They represent the cards that players can purchase. Once purchased, a card
     is (usually) moved from the store to the player's discard pile."""
-    def __init__(self,count,newCard):
-        pile.__init__(self)
+    def __init__(self,count,newCard,owner):
+        pile.__init__(self,owner)
         for i in range(count):
             self._cards.append(newCard(self))
 
@@ -209,9 +279,11 @@ class store(pile):
 class deck(pile):
     def __init__(self,player):
         self._player = player
-        self._discard = pile()
-        self._hand = pile()
-        self._library = pile()
+        self._discard = pile(player)
+        self._hand = pile(player)
+        self._library = pile(player)
+        self._field = pile(player)
+        self._owner = player
 
     def draw(self):
         if len(self._library) == 0:
@@ -226,11 +298,18 @@ class deck(pile):
     def getPlayer(self):
         return self._player
 
+    def cleanup(self):
+        while len(self._hand):
+            self._hand[0].move(self._discard)
+        while len(self._field):
+            self._field[0].move(self._discard)
+        for i in range(5):
+            self.draw()
+
     def _refreshLibrary(self):
         if len(self._library) == 0:
-            for card in self._discard:
-                card.move(self._library)
-            self._discard = pile()
+            while len(self._discard):
+                self._discard[0].move(self._library)
             random.shuffle(self._library)
 
     def getLibrary(self):
@@ -242,16 +321,16 @@ class deck(pile):
     def getDiscard(self):
         return self._discard
 
+    def getField(self):
+        return self._field
+
     def __len__(self):
-        return len(self._hand) + len(self._library) + len(self._discard)
+        return len(self._hand) + len(self._library) + len(self._discard) + \
+                len(self._field)
 
     @property
     def _cards(self):
         return self._hand
-
-class trash(pile):
-    def __init__(self,game):
-        self._game = game
 
 #Gold cards
 #todo: figure out how to make gold cards not use up actions
@@ -262,7 +341,7 @@ class gold1(card):
         self._name = 'Copper'
         self._cost = 0
         self._effects['money'] = 1
-        self._playablePhases = [turn.buy]
+        self._playablePhases = [phase.buy]
 
 #Cost: 3
 class gold2(card):
@@ -271,7 +350,7 @@ class gold2(card):
         self._name = 'Silver'
         self._cost = 0
         self._effects['money'] = 2
-        self._playablePhases = [turn.buy]
+        self._playablePhases = [phase.buy]
 
 #Cost 6
 class gold3(card):
@@ -280,7 +359,7 @@ class gold3(card):
         self._name = 'Gold'
         self._cost = 0
         self._effects['money'] = 3
-        self._playablePhases = [turn.buy]
+        self._playablePhases = [phase.buy]
 
 #Land (or whatever their real name is) cards
 #todo: figure out how ot make victory cards not playable
@@ -328,6 +407,8 @@ class cellar(card):
         card.__init__(self,pile)
         self._name = 'Cellar'
         self._cost = 2
+        self._fullText = 'Cost: 2\n+1 Action\nDiscard any number of cards.\n\
+                +1 Card per card discarded.'
 
 #Cost: 2
 #Trash up to 4 cards from your hand
@@ -336,6 +417,7 @@ class chapel(card):
         card.__init__(self,pile)
         self._name = 'Chapel'
         self._cost = 2
+        self._fullText = 'Cost: 2\nTrash up to 4 cards from your hand.'
 
 #Cost: 2
 #+2 Cards
@@ -346,7 +428,10 @@ class moat(card):
         card.__init__(self,pile)
         self._name = 'Moat'
         self._cost = 2
-        self._playablePhases = [turn.action,turn.wait]
+        self._playablePhases = [phase.action,phase.wait]
+        self._fullText = 'Cost: 2\n+2 Cards\n\
+                When another player plays an Attack card, you may reveal this \
+                from your hand. If you do, you are unaffected by that Attack.'
 
     #todo: check the phase and act accordingly
 
@@ -358,6 +443,8 @@ class chancellor(card):
         card.__init__(self,pile)
         self._name = 'Chancellor'
         self._cost = 2
+        self._fullText = 'Cost: 3\n+$2\n\
+                You may immediately put your deck into your discard pile.'
 
 #Cost: 3
 #+1 Card
@@ -369,6 +456,7 @@ class village(card):
         self._cost = 3
         self._effects['cards'] = 1
         self._effects['actions'] = 2
+        self._fullText = 'Cost: 3\n+1 Card\n+2 Actions'
 
 #Cost: 3
 #+1 Buy
@@ -380,6 +468,7 @@ class woodcutter(card):
         self._cost = 3
         self._effects['buys'] = 1
         self._effects['gold'] = 2
+        self._fullText = 'Cost: 3\n+1 Buy\n+$2'
 
 #Cost: 3
 #Gain a card costing up to $4
@@ -388,6 +477,7 @@ class workshop(card):
         card.__init__(self,pile)
         self._name = 'Workshop'
         self._cost = 3
+        self._fullText = 'Cost: 3\nGain a card costing up to $4'
 
 #Cost: 4
 #Gain a silver card; put it on top of your deck. Each other player reveals a
@@ -398,6 +488,9 @@ class bureaucrat(card):
         card.__init__(self,pile)
         self._name = 'Bureaucrat'
         self._cost = 4
+        self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \n
+        deck. Each other player reveals a Victory card from his hand and puts \n
+        it on his deck (or reveals a hand with no Victory cards).'
 
 #Cost: 4
 #Trash this card. Gain a card costing up to $5
@@ -406,6 +499,8 @@ class feast(card):
         card.__init__(self,pile)
         self._name = 'Feast'
         self._cost = 4
+        self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \n
+        $5'
 
 #Cost: 4
 #Worth 1 Victory for every 10 cards in your deck (rounded down)
