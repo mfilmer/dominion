@@ -31,6 +31,14 @@ class game(object):
             self._stores.append(store(10,village,self))
             self._stores.append(store(10,market,self))
             self._stores.append(store(10,smithy,self))
+            self._stores.append(store(10,cellar,self))
+            self._stores.append(store(10,moat,self))
+            self._stores.append(store(10,militia,self))
+            self._stores.append(store(10,woodcutter,self))
+            self._stores.append(store(10,workshop,self))
+            self._stores.append(store(10,remodel,self))
+            self._stores.append(store(10,mine,self))
+            self._stores.append(store(99,councilRoom,self))
 
     def getPlayers(self):
         return self._players
@@ -143,10 +151,9 @@ class turn(object):
         self._addActions(card._effects['actions'])
         self._addMoney(card._effects['money'])
         self._addBuys(card._effects['buys'])
-        card._specialActions()
         if card.getType() == 'Action':
             self._actions -= 1
-        card.move(card._pile.getOwner().getDeck().getField())
+        card.play()
 
 
     def buy(self,store):
@@ -199,19 +206,9 @@ class card(object):
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
-    #play the card. only does basic card operations
-    #def play(self):
-        #if not self.isPlayable():
-            #return False
-        #player = self._pile.getOwner()
-        #for i in range(self._effects['cards']):
-            #player.drawCard()
-        #player.getTurn()._addActions(self._effects['actions'])
-        #player.getTurn()._addMoney(self._effects['money'])
-        #player.getTurn()._addBuys(self._effects['buys'])
-        #self._specialActions()
-        #self.move(self._pile.getOwner().getDeck().getField())
-        #return True
+    def play(self):
+        self.move(self._pile.getOwner().getDeck().getField())
+        self._specialActions()
 
     def move(self,destPile):
         self._pile._cards.remove(self)
@@ -233,31 +230,35 @@ class card(object):
     def getFullText(self):
         return self._fullText
 
-    #def isPlayable(self):
-        ##check that the card is owned by a player
-        #try:
-            #player = self._pile.getOwner()
-        #except:
-            #if DEBUG:
-                #print('unplayable because card not owned by player')
-            #return False
-        ##check that the card is in a player's hand
-        #if self._pile != player.getDeck().getHand():
-            #if DEBUG:
-                #print('unplayable because card not in a player\'s hand')
-            #return False
-        ##check that the card is playable during this phase
-        #if not player.getTurn().getPhase() in self._playablePhases:
-            #if DEBUG:
-                #print('unplayable due to phase')
-            #return False
-        ##check that the player has at least 1 remaining action
-        #if player.getTurn().getActions() > 0:
-            #return True
-        #else:
-            #if DEBUG:
-                #print('unplayable due to action count')
-            #return False
+    def isPlayable(self):
+        #check that the card is owned by a player
+        try:
+            player = self._pile.getOwner()
+        except:
+            if DEBUG:
+                print('unplayable because card not owned by player')
+            return False
+        #check that the card is in a player's hand
+        if self._pile != player.getDeck().getHand():
+            if DEBUG:
+                print('unplayable because card not in a player\'s hand')
+            return False
+        #check that the card is playable during this phase
+        if not player.getTurn().getPhase() in self._playablePhases:
+            if DEBUG:
+                print('unplayable due to phase')
+            return False
+        #check that the card is an action card
+        if self.getType() == 'Action':
+            #check that the player has at least 1 remaining action
+            if player.getTurn().getActions() > 0:
+                return True
+            else:
+                if DEBUG:
+                    print('unplayable due to action count')
+                return False
+        else:
+            return True
 
     def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 
@@ -382,7 +383,6 @@ class deck(pile):
     @property
     def _cards(self):
         return self._hand
-
 #Gold cards
 #todo: figure out how to make gold cards not use up actions
 #Cost: 0
@@ -394,6 +394,7 @@ class gold1(card):
         self._effects['money'] = 1
         self._playablePhases = [phase.buy]
         self._type = 'Treasure'
+        self._fullText = '1$'
 
 #Cost: 3
 class gold2(card):
@@ -404,6 +405,7 @@ class gold2(card):
         self._effects['money'] = 2
         self._playablePhases = [phase.buy]
         self._type = 'Treasure'
+        self._fullText = '2$'
 
 #Cost 6
 class gold3(card):
@@ -414,6 +416,7 @@ class gold3(card):
         self._effects['money'] = 3
         self._playablePhases = [phase.buy]
         self._type = 'Treasure'
+        self._fullText = '3$'
 
 #Land (or whatever their real name is) cards
 #todo: figure out how ot make victory cards not playable
@@ -426,6 +429,7 @@ class victory1(card):
         self._victoryPoints = 1
         self._playablePhases = []
         self._type = 'Victory'
+        self._fullText = '1 VP'
 
 #Cost: 5
 class victory3(card):
@@ -436,6 +440,7 @@ class victory3(card):
         self._victoryPoints = 2
         self._playablePhases = []
         self._type = 'Victory'
+        self._fullText = '3 VP'
 
 #Cost: 8
 class victory6(card):
@@ -446,6 +451,7 @@ class victory6(card):
         self._victoryPoints = 3
         self._playablePhases = []
         self._type = 'Victory'
+        self._fullText = '6 VP'
 
 class curse(card):
     def __init__(self,pile):
@@ -455,6 +461,7 @@ class curse(card):
         self._victoryPoints = -1
         self._playablePhases = []
         self._type = 'Victory'
+        self._fullText = '-1 VP'
 
 #Cost: 2
 #+1 Action
@@ -465,8 +472,9 @@ class cellar(card):
         card.__init__(self,pile)
         self._name = 'Cellar'
         self._cost = 2
+        self._effects['actions'] = 1
         self._fullText = 'Cost: 2\n+1 Action\nDiscard any number of cards.\n\
-                +1 Card per card discarded.'
+        +1 Card per card discarded.'
 
 #Cost: 2
 #Trash up to 4 cards from your hand
@@ -488,11 +496,12 @@ class moat(card):
         self._cost = 2
         self._playablePhases = [phase.action,phase.wait]
         self._type = 'Reaction'
+        self._effects['cards'] = 2
         self._fullText = 'Cost: 2\n+2 Cards\n\
-                When another player plays an Attack card, you may reveal this \
-                from your hand. If you do, you are unaffected by that Attack.'
+        When another player plays an Attack card, you may reveal this \
+        from your hand. If you do, you are unaffected by that Attack.'
 
-    #todo: check the phase and act accordingly
+        #todo: check the phase and act accordingly
 
 #Cost: 2
 #+2
@@ -502,8 +511,9 @@ class chancellor(card):
         card.__init__(self,pile)
         self._name = 'Chancellor'
         self._cost = 2
+        self._effects['money'] = 2
         self._fullText = 'Cost: 3\n+$2\n\
-                You may immediately put your deck into your discard pile.'
+        You may immediately put your deck into your discard pile.'
 
 #Cost: 3
 #+1 Card
@@ -526,7 +536,7 @@ class woodcutter(card):
         self._name = 'Woodcutter'
         self._cost = 3
         self._effects['buys'] = 1
-        self._effects['gold'] = 2
+        self._effects['money'] = 2
         self._fullText = 'Cost: 3\n+1 Buy\n+$2'
 
 #Cost: 3
@@ -547,6 +557,7 @@ class bureaucrat(card):
         card.__init__(self,pile)
         self._name = 'Bureaucrat'
         self._cost = 4
+        self._type = 'Attack'
         self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \
         deck. Each other player reveals a Victory card from his hand and puts \
         it on his deck (or reveals a hand with no Victory cards).'
@@ -569,10 +580,23 @@ class gardens(card):
         self._name = 'Gardens'
         self._cost = 4
         self._playablePhases = []
+        self._fullText = 'Cost: 4\nWorth 1 VP for every 10 cards in your deck \
+        (rounded down)'
     
     @property
     def _victoryPoints(self):
         return len(self.getPile.getPlayer.getDeck)//10
+
+#Cost: 4
+#Each other player discards down to 3 cards in his hand.
+class militia(card):
+    def __init__(self,pile):
+        card.__init__(self,pile)
+        self._name = 'Militia'
+        self._cost = 4
+        self._effects['money'] = 2
+        self._fullText = 'Cost: 4\n+$2\nEach other player discards down to 3 \
+                cards in his hand.'
 
 #Cost: 4
 #Trash a Copper from your hand. If you do, +$3
@@ -581,6 +605,7 @@ class moneylender(card):
         card.__init__(self,pile)
         self._name = 'Moneylender'
         self._cost = 4
+        self._fullText = 'Cost: 4\nTrash a Copper from your hand. If you do, +$3'
 
 #Cost: 4
 #Trash a card from your hand. Gain a card costing up to $2 more than the trashed
@@ -590,6 +615,8 @@ class remodel(card):
         card.__init__(self,pile)
         self._name = 'Remodel'
         self._cost = 4
+        self._fullText = 'Cost: 4\nTrash a card from your hand. Gain a card \
+        costing up to $2 more than the trashed card'
 
 #Cost: 4
 #+3 cards
@@ -599,6 +626,7 @@ class smithy(card):
         self._name = 'Smithy'
         self._cost = 4
         self._effects['cards'] = 3
+        self._fullText = 'Cost: 3\n+3 cards'
 
 #Cost: 4
 #+1 card
@@ -610,6 +638,11 @@ class spy(card):
         card.__init__(self,pile)
         self._name = 'Spy'
         self._cost = 4
+        self._type = 'Attack'
+        self._effects['cards'] = 1
+        self._effects['actions'] = 1
+        self._fullText = 'Cost: 4\nEach player (including you) reveals the \
+        top card of his deck and either discards it or puts it back, your choice'
 
 #Cost: 4
 #Each other player reveals the top 2 cards of his deck. If they revealed any
@@ -620,6 +653,11 @@ class thief(card):
         card.__init__(self)
         self._name = 'Thief'
         self._cost = 4
+        self._type = 'Attack'
+        self._fullText = 'Cost: 4\n Each other player reveals the top 2 cards \
+        of his deck. If they revealed any Treasure cards, they trash one of \
+        them that you choose. You may gain any or all of these trashed cards. \
+        They discard the other revealed cards.'
 
 #Cost: 4
 #Choose an Action card in your hand. Play it twice
@@ -628,6 +666,8 @@ class throneRoom(card):
         card.__init__(self,pile)
         self._name = 'Throne Room'
         self._cost = 4
+        self._fullText = 'Cost: 4\n Choose an Action card in your hand. Play \
+                it twice'
 
 #Cost: 5
 #+4 Cards
@@ -637,7 +677,20 @@ class councilRoom(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Council Room'
-        self._cost = 5
+        #self._cost = 5
+        self._cost = 0
+        self._effects['cards'] = 4
+        self._effects['buys'] = 1
+        self._fullText = 'Cost: 5\n+4 cards\n+1 buy\nEach other player draws a \
+        card'
+        
+    def _specialActions(self):
+        print('special actions')
+        owner = self._pile.getOwner()
+        players = owner.getGame().getPlayers()
+        for player in players:
+            if player != owner:
+                player.drawCard()
 
 #Cost: 5
 #+2 Actions
@@ -648,6 +701,10 @@ class festival(card):
         card.__init__(self,pile)
         self._name = 'Festival'
         self._cost = 5
+        self._effects['actions'] = 2
+        self._effects['buys'] = 1
+        self._effects['money'] = 2
+        self._fullText = 'Cost: 5\n+2 actions\n+1 buy\n+2$'
 
 #Cost: 5
 #+2 Cards
@@ -657,6 +714,9 @@ class laboratory(card):
         card.__init__(self,pile)
         self._name = 'Laboratory'
         self._cost = 5
+        self._effects['cards'] = 2
+        self._effects['actions'] = 1
+        self._fullText = 'Cost: 5\n+2 cards\n+1 action'
 
 #Cost: 5
 #Draw until you have 7 cards in hand. You may set aside any Action cards drawn
@@ -667,6 +727,9 @@ class library(card):
         card.__init__(self,pile)
         self._name = 'Library'
         self._cost = 5
+        self._fullText = 'Cost: 5\nDraw until you have 7 cards in hand. You \
+                may set aside any Action cards drawn this way, as you draw \
+                them; discard the set aside cards after you finish drawing.'
 
 #Cost: 5
 #+1 Card
@@ -678,7 +741,11 @@ class market(card):
         card.__init__(self,pile)
         self._name = 'Market'
         self._cost = 5
-        self._effects = {'cards':1,'buys':1,'actions':1,'money':1}
+        self._effects['money'] = 1
+        self._effects['cards'] = 1
+        self._effects['actions'] = 1
+        self._effects['buys'] = 1
+        self._fullText = 'Cost: 5\n+1 card\n+1 action\n+1 buy\n+1$'
 
 #Cost: 5
 #Trash a Treasure card from your hand. Gain a Treasure card costing up to $3
@@ -688,6 +755,8 @@ class mine(card):
         card.__init__(self,pile)
         self._name = 'Mine'
         self._cost = 5
+        self._fullText = 'Cost: 5\nTrash a Treasure card from your hand. Gain \
+        a Treasure card costing up to $3 more; put it into your hand.'
 
 #Cost: 5
 #+2 Cards
@@ -697,6 +766,9 @@ class witch(card):
         card.__init__(self,pile)
         self._name = 'Witch'
         self._cost = 5
+        self._type = 'Attack'
+        self._effects['cards'] = 2
+        self._fullText = 'Cost: 5\n+2 cards\nEach other player gains a Curse card'
 
 #Cost: 6
 #Reveal cards from your deck until you reveal 2 Treasure cards. Put those
@@ -706,3 +778,6 @@ class adventurer(card):
         card.__init__(self,pile)
         self._name = 'Adventurer'
         self._cost = 6
+        self._fullText = 'Cost: 6\nReveal cards from your deck until you \
+                reveal 2 Treasure cards. Put those Treasure cards in your hand \
+                and discard the other revealed cards'

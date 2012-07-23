@@ -162,7 +162,11 @@ class UI(object):
         self.nextPhase()
 
     def comPlayName(self,command,varList):
-        card =  self.getCardByName(varList['name'])
+        try:
+            name = varList['name']
+        except:
+            name = varList['name1'] + ' ' + varList['name2']
+        card =  self.getCardByName(name)
         if card is None:
             print('Card is not in hand')
         else:
@@ -170,7 +174,11 @@ class UI(object):
             self.actionPhaseDisplay()
 
     def comBuyCard(self,command,varList):
-        store = self.getStoreByName(varList['name'])
+        try:
+            name = varList['name']
+        except:
+            name = varList['name1'] + ' ' + varList['name2']
+        store = self.getStoreByName(name)
         if store is None:
             print('Cannot buy that card')
         else:
@@ -191,6 +199,9 @@ class UI(object):
     def comListStores(self,command,varList):
         self.buyPhaseDisplay()
 
+    def comCardText(self,command,varList):
+        print('card text not available at this time')
+
 def main():
     cli = CLI.cli()
     gameUI = UI()
@@ -209,8 +220,12 @@ def main():
     cli.addCommand('store',gameUI.comListStores)
     cli.addCommand('stores',gameUI.comListStores)
     cli.addCommand('next',gameUI.comNextPhase)
+    cli.addCommand('text %sname',gameUI.comCardText)
+    cli.addCommand('text %sname1 %sname2',gameUI.comCardText)
     cli.addCommand('buy %sname',gameUI.comBuyCard)
+    cli.addCommand('buy %sname1 %sname2',gameUI.comBuyCard)
     cli.addCommand('play %sname',gameUI.comPlayName)
+    cli.addCommand('play %sname1 %sname2',gameUI.comPlayName)
 
     #Start Game
     if gameUI.countCardType('Action') == 0:
