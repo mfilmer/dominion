@@ -168,24 +168,29 @@ class turn(object):
         else:
             raise ValueError(phase + ' is not a valid phase')
 
-    def play(self,card):
+    def play(self,card,extraData):
         if self.isPhase('action'):
             if self._actions < 1:
                 raise InsufficientActions
-            if card.isType('Action'):
-                self._actions -= 1
-            else:
+            if not card.isType('Action'):
                 raise InvalidPhase
         if self.isPhase('buy'):
             if not card.isType('Treasure'):
                 raise InvalidPhase
         player = self.getPlayer()
-        card.play()
-        for i in range(card._effects['cards']):
-            player.drawCard()
-        self._addActions(card._effects['actions'])
-        self._addMoney(card._effects['money'])
-        self._addBuys(card._effects['buys'])
+        try:
+            card.play(extraData)
+        except ValueError:
+            card.move(self._player.getDeck().getHand())
+            raise
+        else:
+            for i in range(card._effects['cards']):
+                player.drawCard()
+            self._addActions(card._effects['actions'])
+            self._addMoney(card._effects['money'])
+            self._addBuys(card._effects['buys'])
+            if self.isPhase('action'):
+                self._actions -= 1
 
     def buy(self,store):
         if self.isPhase('action'):
@@ -210,7 +215,7 @@ class turn(object):
                 if card.isType('Treasure'):
                     treasureList.append(card)
             while len(treasureList):
-                self.play(treasureList.pop())
+                self.play(treasureList.pop(),[])
         if self.isPhase('cleanup'):
             self._player.getDeck().cleanup()
             self._phase += 1
@@ -230,15 +235,16 @@ class card(object):
         self._victoryPoints = 0
         self._cost = 0
         self._playablePhases = [phase.action]
+        self._extraPrompts = []
         self._name = '<Unnammed>'
         self._types = ['Action']
         self._fullText = '<Blank>'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
-    def play(self):
+    def play(self,extraData):
         self.move(self._pile.getOwner().getDeck().getField())
-        self._specialActions()
+        self._specialActions(extraData)
 
     def move(self,destPile):
         self._pile._cards.remove(self)
@@ -254,13 +260,16 @@ class card(object):
     def getName(self):
         return self._name
 
+    def getPrompts(self):
+        return self._extraPrompts
+
     def isType(self,type):
         return type in self._types
 
     def getFullText(self):
         return self._fullText
 
-    def _specialActions(self):
+    def _specialActions(self,extraData):
         """Dummy method that should be overridden in child classes who do 
         something other than cause the player to draw cards, gain money, gain 
         extra actions, or gain extra buys."""
@@ -302,6 +311,12 @@ class pile(object):
     def hasCardType(self,type):
         for card in self:
             if card.isType(type):
+                return True
+        return False
+
+    def hasCardName(self,name):
+        for card in self:
+            if card.getName() == name:
                 return True
         return False
 
@@ -382,6 +397,7 @@ class deck(pile):
         self._library = pile(player)
         self._field = pile(player)
         self._owner = player
+        self._extraPrompts = []
 
     def draw(self):
         if len(self._library) == 0:
@@ -519,8 +535,31 @@ class cellar(card):
         self._name = 'Cellar'
         self._cost = 2
         self._effects['actions'] = 1
+        self._extraPrompts = ['Cards to Discard']
         self._fullText = 'Cost: 2\n+1 Action\nDiscard any number of cards.\n\
         +1 Card per card discarded.'
+
+    def _specialActions(self,extraData):
+        discardCards = map(str.strip,extraData[0].split(','))
+        tmpPile = pile(self)
+        deck = self._pile.getOwner().getDeck()
+        hand = deck.getHand()
+        discard = deck.getDiscard()
+        try:
+            for name in discardCards:
+                card = hand.getCardByName(name)
+                card.move(tmpPile)
+        except ValueError:
+            while len(tmpPile):
+                tmpPile[0].move(hand)
+            raise
+        cardsToDraw = len(tmpPile)
+        while len(tmpPile):
+            tmpPile[0].move(discard)
+        print('drawing ' + str(cardsToDraw) + ' cards')
+        for i in range(cardsToDraw):
+            deck.draw()
+
 
 #Cost: 2
 #Trash up to 4 cards from your hand
@@ -729,7 +768,7 @@ class councilRoom(card):
         self._fullText = 'Cost: 5\n+4 cards\n+1 buy\nEach other player draws a \
         card'
         
-    def _specialActions(self):
+    def _specialActions(self,extraData=[]):
         print('special actions')
         owner = self._pile.getOwner()
         players = owner.getGame().getPlayers()
@@ -835,7 +874,7 @@ class adventurer(card):
                 reveal 2 Treasure cards. Put those Treasure cards in your hand \
                 and discard the other revealed cards'
 
-    def _specialActions(self):
+    def _specialActions(self,extraData=[]):
         deck = self._pile.getOwner().getDeck()
         library = deck.getLibrary()
         discard = deck.getDiscard()

@@ -166,7 +166,14 @@ class UI(object):
             print('Card is not in hand')
         else:
             try:
-                self._turn.play(card)
+                extraData = []
+                extraPrompts = card.getPrompts()
+                for prompt in extraPrompts:
+                    extraData.append(raw_input(prompt + ': '))
+                try:
+                    self._turn.play(card,extraData)
+                except ValueError:
+                    print('Card could not be played')
             except InvalidPhase:
                 print('This card cannot be played in this phase')
             except InsufficientActions:
