@@ -39,6 +39,7 @@ class game(object):
             self._stores.append(store(10,remodel,self))
             self._stores.append(store(10,mine,self))
             self._stores.append(store('inf',councilRoom,self))
+            self._stores.append(store('inf',adventurer,self))
 
     def getPlayers(self):
         return self._players
@@ -179,12 +180,12 @@ class turn(object):
             if not card.isType('Treasure'):
                 raise InvalidPhase
         player = self.getPlayer()
+        card.play()
         for i in range(card._effects['cards']):
             player.drawCard()
         self._addActions(card._effects['actions'])
         self._addMoney(card._effects['money'])
         self._addBuys(card._effects['buys'])
-        card.play()
 
     def buy(self,store):
         if self.isPhase('action'):
@@ -259,28 +260,6 @@ class card(object):
     def getFullText(self):
         return self._fullText
 
-    #def isPlayable(self):
-        ##check that the card is owned by a player
-        #try:
-            #player = self._pile.getOwner()
-        #except:
-            #return False
-        ##check that the card is in a player's hand
-        #if self._pile != player.getDeck().getHand():
-            #return False
-        ##check that the card is playable during this phase
-        #if not player.getTurn().getPhase() in self._playablePhases:
-            #return False
-        ##check that the card is an action card
-        #if self.isType('Action'):
-            ##check that the player has at least 1 remaining action
-            #if player.getTurn().getActions() > 0:
-                #return True
-            #else:
-                #return False
-        #else:
-            #return True
-
     def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 
         something other than cause the player to draw cards, gain money, gain 
@@ -326,6 +305,13 @@ class pile(object):
                 return True
         return False
 
+    def countCardsByType(self,type):
+        count = 0
+        for card in self:
+            if card.isType(type):
+                count += 1
+        return count
+
     def countCardsByName(self,name):
         count = 0
         for card in self:
@@ -342,8 +328,11 @@ class pile(object):
     def __setitem__(self,i,value):
         self._cards[i] = value
 
-    def __contains__(self,item):
-        return item in self._cards
+    def __contains__(self,name):
+        for card in self:
+            if card.getName().lower() == name.lower():
+                return True
+        return False
 
 class store(pile):
     """Stores are special piles that you can only take from and not ever add to.
@@ -734,8 +723,7 @@ class councilRoom(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Council Room'
-        #self._cost = 5
-        self._cost = 0
+        self._cost = 5
         self._effects['cards'] = 4
         self._effects['buys'] = 1
         self._fullText = 'Cost: 5\n+4 cards\n+1 buy\nEach other player draws a \
@@ -815,6 +803,14 @@ class mine(card):
         self._fullText = 'Cost: 5\nTrash a Treasure card from your hand. Gain \
         a Treasure card costing up to $3 more; put it into your hand.'
 
+    #todo: finish
+    def _specialActions(self):
+        #check that the player has at least 1 copper or silver in their hand
+        hand = self._pile.getOwner().getDeck().getHand()
+        if not ('Copper' in hand or 'Silver' in hand):
+            raise MissingCards('Cannot play mine without a copper or silver \
+                    in hand')
+
 #Cost: 5
 #+2 Cards
 #Each other player gains a Curse card
@@ -838,3 +834,26 @@ class adventurer(card):
         self._fullText = 'Cost: 6\nReveal cards from your deck until you \
                 reveal 2 Treasure cards. Put those Treasure cards in your hand \
                 and discard the other revealed cards'
+
+    def _specialActions(self):
+        deck = self._pile.getOwner().getDeck()
+        library = deck.getLibrary()
+        discard = deck.getDiscard()
+        hand = deck.getHand()
+        tmpPile = pile(self)
+        
+        while tmpPile.countCardsByType('Treasure') < 2:
+            if len(library) == 0:
+                deck._refreshLibrary()
+            if len(library) > 0:
+                library[0].move(tmpPile)
+            else:
+                break
+        
+        #move those cards to either hand or discard
+        while len(tmpPile):
+            card = tmpPile[0]
+            if card.isType('Treasure'):
+                card.move(hand)
+            else:
+                card.move(discard)

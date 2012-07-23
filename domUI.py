@@ -21,7 +21,14 @@ class UI(object):
     def promptFCN(self):
         name = self._player.getName()
         pid = self._player.getID()
-        return str(pid) + ': ' + name + '> '
+        m = str(self._turn.getMoney())
+        b = str(self._turn.getBuys())
+        a = str(self._turn.getActions())
+        promptStr = '$' + m + ' B:' + b 
+        if self._turn.isPhase('Action'):
+            promptStr += ' A:' + a 
+        promptStr += '\n' + str(pid) + ': ' + name + '> '
+        return promptStr
 
     def listCards(self,cards):
         for index,(count,name) in \
@@ -85,13 +92,12 @@ class UI(object):
         return None
 
     def newTurnDisplay(self,skip=False):
-        print(chr(27) + '[2J')
+        print(chr(27) + '[2J')  #sometimes clears the screen (linux only)
         print(self._player.getName() + '\'s Turn:')
         self.actionPhaseDisplay(skip)
 
     def actionPhaseDisplay(self,skip=False):
         self.listCards(self._hand)
-        self.displayStash(True)
         print('Action Phase:')
         if skip:
             print('No action cards in hand, skipping action phase')
@@ -101,14 +107,7 @@ class UI(object):
             print('No money, skipping buy phase')
         else:
             self.listStores()
-            self.displayStash()
             print('Buy Phase:')
-
-    def displayStash(self,showActions=False):
-        print('Remaining Buys: ' + str(self._turn.getBuys()))
-        print('Remaining Money: ' + str(self._turn.getMoney()))
-        if showActions:
-            print('Remaining Actions: ' + str(self._turn.getActions()))
 
     @property
     def _stores(self):
@@ -172,13 +171,16 @@ class UI(object):
                 print('This card cannot be played in this phase')
             except InsufficientActions:
                 print('Not enough actions to play that card')
-            if self._turn.hasRemainingActions():
-                if self._hand.hasCardType('Action'):
-                    self.actionPhaseDisplay()
+            except MissingCards, e:
+                print(e)
+            else:
+                if self._turn.hasRemainingActions():
+                    if self._hand.hasCardType('Action'):
+                        self.actionPhaseDisplay()
+                    else:
+                        self.nextPhase()
                 else:
                     self.nextPhase()
-            else:
-                self.nextPhase()
 
     def comBuyCard(self,command,varList):
         try:
@@ -207,7 +209,7 @@ class UI(object):
                     self.nextPhase()
 
     def comListStores(self,command,varList):
-        self.buyPhaseDisplay()
+        self.listStores()
 
     def comCardText(self,command,varList):
         print('card text not available at this time')
@@ -228,7 +230,6 @@ def main():
     cli.addCommand('field',gameUI.comListField)
     cli.addCommand('deck',gameUI.comListDeck)
     cli.addCommand('store',gameUI.comListStores)
-    cli.addCommand('stores',gameUI.comListStores)
     cli.addCommand('next',gameUI.comNextPhase)
     cli.addCommand('text %sname',gameUI.comCardText)
     cli.addCommand('text %sname1 %sname2',gameUI.comCardText)
@@ -236,6 +237,9 @@ def main():
     cli.addCommand('buy %sname1 %sname2',gameUI.comBuyCard)
     cli.addCommand('play %sname',gameUI.comPlayName)
     cli.addCommand('play %sname1 %sname2',gameUI.comPlayName)
+    #todo: fix the cli module
+    #cli.addCommand('play %sname with %*all',gameUI.comPlayWithName)
+    #cli.addCommand('play %sname1 %sname2 with %*all',gameUI.comPlayWithName)
 
     #Start Game
     #if gameUI.countCardType('Action') == 0:
@@ -245,11 +249,6 @@ def main():
     else:
         gameUI.actionPhaseDisplay(False)
     cli.run()
-
-    #todo: setup CLI
-    #prompt should reflect current player name and ID
-
-    #todo: setup players
 
 if __name__ == '__main__':
     main()

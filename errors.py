@@ -10,6 +10,9 @@ class InsufficientBuys(Exception):
 class InsufficientActions(Exception):
     pass
 
+class MissingCards(Exception):
+    pass
+
 #card is played in the wrong phase
 class InvalidPhase(Exception):
     pass
