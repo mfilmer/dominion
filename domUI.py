@@ -172,7 +172,13 @@ class UI(object):
                 print('This card cannot be played in this phase')
             except InsufficientActions:
                 print('Not enough actions to play that card')
-            self.actionPhaseDisplay()
+            if self._turn.hasRemainingActions():
+                if self._hand.hasCardType('Action'):
+                    self.actionPhaseDisplay()
+                else:
+                    self.nextPhase()
+            else:
+                self.nextPhase()
 
     def comBuyCard(self,command,varList):
         try:
@@ -195,10 +201,10 @@ class UI(object):
             except InsufficientBuys:
                 print('No remaining buys')
             else:
-                if self._turn.getBuys() == 0:
-                    self.nextPhase()
-                else:
+                if self._turn.hasRemainingBuys():
                     self.buyPhaseDisplay()
+                else:
+                    self.nextPhase()
 
     def comListStores(self,command,varList):
         self.buyPhaseDisplay()

@@ -168,8 +168,6 @@ class turn(object):
             raise ValueError(phase + ' is not a valid phase')
 
     def play(self,card):
-        #if not card.isPlayable():
-            #raise UnplayableCard
         if self.isPhase('action'):
             if self._actions < 1:
                 raise InsufficientActions
@@ -196,9 +194,9 @@ class turn(object):
         cost = store.getCost()
         if self._money < cost:
             raise InsufficientFunds
+        store.buy(self._player)
         self._money -= cost
         self._buys -= 1
-        store.buy(self._player)
 
     def advancePhase(self):
         if self._phase + 1 > phase.wait:
