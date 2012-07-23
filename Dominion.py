@@ -134,6 +134,21 @@ class turn(object):
     def getMoney(self):
         return self._money
 
+    def play(self,card):
+        if not card.isPlayable():
+            raise UnplayableCard
+        player = self.getPlayer()
+        for i in range(card._effects['cards']):
+            player.drawCard()
+        self._addActions(card._effects['actions'])
+        self._addMoney(card._effects['money'])
+        self._addBuys(card._effects['buys'])
+        card._specialActions()
+        if card.getType() == 'Action':
+            self._actions -= 1
+        card.move(card._pile.getOwner().getDeck().getField())
+
+
     def buy(self,store):
         if len(store) == 0:
             raise EmptyPile
@@ -157,7 +172,7 @@ class turn(object):
                 if card.getType() == 'Treasure':
                     treasureList.append(card)
             while len(treasureList):
-                treasureList.pop().play()
+                self.play(treasureList.pop())
         if self._phase == phase.cleanup:
             self._player.getDeck().cleanup()
             self._phase += 1
@@ -185,18 +200,18 @@ class card(object):
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
     #play the card. only does basic card operations
-    def play(self):
-        if not self.isPlayable():
-            return False
-        player = self._pile.getOwner()
-        for i in range(self._effects['cards']):
-            player.drawCard()
-        player.getTurn()._addActions(self._effects['actions'])
-        player.getTurn()._addMoney(self._effects['money'])
-        player.getTurn()._addBuys(self._effects['buys'])
-        self._specialActions()
-        self.move(self._pile.getOwner().getDeck().getField())
-        return True
+    #def play(self):
+        #if not self.isPlayable():
+            #return False
+        #player = self._pile.getOwner()
+        #for i in range(self._effects['cards']):
+            #player.drawCard()
+        #player.getTurn()._addActions(self._effects['actions'])
+        #player.getTurn()._addMoney(self._effects['money'])
+        #player.getTurn()._addBuys(self._effects['buys'])
+        #self._specialActions()
+        #self.move(self._pile.getOwner().getDeck().getField())
+        #return True
 
     def move(self,destPile):
         self._pile._cards.remove(self)
@@ -218,31 +233,31 @@ class card(object):
     def getFullText(self):
         return self._fullText
 
-    def isPlayable(self):
-        #check that the card is owned by a player
-        try:
-            player = self._pile.getOwner()
-        except:
-            if DEBUG:
-                print('unplayable because card not owned by player')
-            return False
-        #check that the card is in a player's hand
-        if self._pile != player.getDeck().getHand():
-            if DEBUG:
-                print('unplayable because card not in a player\'s hand')
-            return False
-        #check that the card is playable during this phase
-        if not player.getTurn().getPhase() in self._playablePhases:
-            if DEBUG:
-                print('unplayable due to phase')
-            return False
-        #check that the player has at least 1 remaining action
-        if player.getTurn().getActions() > 0:
-            return True
-        else:
-            if DEBUG:
-                print('unplayable due to action count')
-            return False
+    #def isPlayable(self):
+        ##check that the card is owned by a player
+        #try:
+            #player = self._pile.getOwner()
+        #except:
+            #if DEBUG:
+                #print('unplayable because card not owned by player')
+            #return False
+        ##check that the card is in a player's hand
+        #if self._pile != player.getDeck().getHand():
+            #if DEBUG:
+                #print('unplayable because card not in a player\'s hand')
+            #return False
+        ##check that the card is playable during this phase
+        #if not player.getTurn().getPhase() in self._playablePhases:
+            #if DEBUG:
+                #print('unplayable due to phase')
+            #return False
+        ##check that the player has at least 1 remaining action
+        #if player.getTurn().getActions() > 0:
+            #return True
+        #else:
+            #if DEBUG:
+                #print('unplayable due to action count')
+            #return False
 
     def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 

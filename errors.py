@@ -6,3 +6,6 @@ class InsufficientFunds(Exception):
 
 class InsufficientBuys(Exception):
     pass
+
+class UnplayableCard(Exception):
+    pass

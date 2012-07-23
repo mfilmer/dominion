@@ -166,7 +166,7 @@ class UI(object):
         if card is None:
             print('Card is not in hand')
         else:
-            card.play()
+            self._turn.play(card)
             self.actionPhaseDisplay()
 
     def comBuyCard(self,command,varList):
