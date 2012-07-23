@@ -2,9 +2,9 @@ from __future__ import print_function
 #from __future__ import division    #division isnt actually used yet
 import random
 
-import errors
+from errors import *
 
-DEBUG = True
+DEBUG = False
 
 class game(object):
     def __init__(self,playerNames,mode='original'):
@@ -18,13 +18,13 @@ class game(object):
         self._trash = pile(self)
         #create initial stores
         self._stores = []
-        self._stores.append(store(10,victory1,self))
-        self._stores.append(store(10,victory3,self))
-        self._stores.append(store(10,victory6,self))
-        self._stores.append(store(10,gold1,self))
-        self._stores.append(store(10,gold2,self))
-        self._stores.append(store(10,gold3,self))
-        self._stores.append(store(10,curse,self))
+        self._stores.append(store(99,gold1,self))
+        self._stores.append(store(99,gold2,self))
+        self._stores.append(store(99,gold3,self))
+        self._stores.append(store(8,victory1,self))
+        self._stores.append(store(8,victory3,self))
+        self._stores.append(store(8,victory6,self))
+        self._stores.append(store(99,curse,self))
 
         #mode specific stores
         if mode == 'original':
@@ -76,6 +76,8 @@ class player(object):
     def playCard(self,card):
         """Try to play a card. If the card was successfully played playCard()
         returns True, if the card cannot be played, playCard() returns False"""
+        print('delete this line of code eventually')
+        print('oh, and this should never show up...')
         if not card.isPlayable():
             return False
         card.play()
@@ -135,10 +137,13 @@ class turn(object):
     def buy(self,store):
         if len(store) == 0:
             raise EmptyPile
+        if self._buys == 0:
+            raise InsufficientBuys
         cost = store.getCost()
         if self._money < cost:
             raise InsufficientFunds
         self._money -= cost
+        self._buys -= 1
         store.buy(self._player)
 
     def advancePhase(self):
@@ -269,6 +274,9 @@ class pile(object):
     def getOwner(self):
         return self._owner
 
+    def getCards(self):
+        return self._cards
+
     def __len__(self):
         return len(self._cards)
 
@@ -377,7 +385,7 @@ class gold2(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Silver'
-        self._cost = 0
+        self._cost = 3
         self._effects['money'] = 2
         self._playablePhases = [phase.buy]
         self._type = 'Treasure'
@@ -387,7 +395,7 @@ class gold3(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Gold'
-        self._cost = 0
+        self._cost = 6
         self._effects['money'] = 3
         self._playablePhases = [phase.buy]
         self._type = 'Treasure'
@@ -575,6 +583,7 @@ class smithy(card):
         card.__init__(self,pile)
         self._name = 'Smithy'
         self._cost = 4
+        self._effects['cards'] = 3
 
 #Cost: 4
 #+1 card
@@ -654,6 +663,7 @@ class market(card):
         card.__init__(self,pile)
         self._name = 'Market'
         self._cost = 5
+        self._effects = {'cards':1,'buys':1,'actions':1,'money':1}
 
 #Cost: 5
 #Trash a Treasure card from your hand. Gain a Treasure card costing up to $3

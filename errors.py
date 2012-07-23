@@ -3,3 +3,6 @@ class EmptyPile(Exception):
 
 class InsufficientFunds(Exception):
     pass
+
+class InsufficientBuys(Exception):
+    pass
