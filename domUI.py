@@ -4,18 +4,19 @@ from __future__ import print_function
 import CLI
 from errors import *
 import Dominion
-import readline
+try:
+    import readline
+except ImportError:
+    pass
 
 class UI(object):
     def __init__(self):
         pass
 
     #Internal Commands
-
     def createGame(self,players):
         self._game = Dominion.game(players)
         self.nextTurn()
-        self._stores = self._game.getStores()
 
     def promptFCN(self):
         name = self._player.getName()
@@ -30,23 +31,30 @@ class UI(object):
     def listStores(self):
         print('Store Inventory:')
         for i,store in enumerate(self._stores):
-            print(str(i+1) + ': (' + str(len(store)) + ') $' + \
-                    str(store.getCost()) + ' ' + store.getName())
+            try:
+                count = len(store)
+            except OverflowError:
+                count = u'\u221E'
+            else:
+                count = str(count)
+            print(str(i+1) + u': (' + count + u') $' + \
+                    str(store.getCost()) + u' ' + \
+                    store.getName())
 
     def nextPhase(self):
-        if self._phase == 1:
+        if self._turn.isPhase('buy'):
             self._turn.advancePhase()
             self.nextTurn()
-            print('now entering phase: ' + str(self._phase))
         else:
             self._turn.advancePhase()
-        if self._phase == 0:
-            if self.countCardType('Action') == 0:
+        if self._turn.isPhase('action'):
+            #if self.countCardType('Action') == 0:
+            if self._hand.hasCardType('Action'):
+                self.newTurnDisplay(False)
+            else:
                 self.newTurnDisplay(True)
                 self.nextPhase()
-            else:
-                self.newTurnDisplay(False)
-        elif self._phase == 1:
+        elif self._turn.isPhase('buy'):
             if self._turn.getMoney() == 0:
                 self.buyPhaseDisplay(True)
                 self.nextPhase()
@@ -69,24 +77,12 @@ class UI(object):
                 counts.append(1)
         return zip(counts,names)
 
-    def getCardByName(self,name):
-        for card in self._hand:
-            if card.getName() == name:
-                return card
-        return None
-
     def getStoreByName(self,name):
+        raise Exception('do not use this function')
         for store in self._game.getStores():
             if store.getName() == name:
                 return store
         return None
-
-    def countCardType(self,type):
-        count = 0
-        for card in self._hand:
-            if card.getType() == type:
-                count += 1
-        return count
 
     def newTurnDisplay(self,skip=False):
         print(chr(27) + '[2J')
@@ -114,10 +110,9 @@ class UI(object):
         if showActions:
             print('Remaining Actions: ' + str(self._turn.getActions()))
 
-
     @property
-    def _phase(self):
-        return self._turn.getPhase()
+    def _stores(self):
+        return self._game.getStores()
     @property
     def _player(self):
         return self._game.getCurrentPlayer()
@@ -166,11 +161,17 @@ class UI(object):
             name = varList['name']
         except:
             name = varList['name1'] + ' ' + varList['name2']
-        card =  self.getCardByName(name)
-        if card is None:
+        try:
+            card = self._hand.getCardByName(name)
+        except:
             print('Card is not in hand')
         else:
-            self._turn.play(card)
+            try:
+                self._turn.play(card)
+            except InvalidPhase:
+                print('This card cannot be played in this phase')
+            except InsufficientActions:
+                print('Not enough actions to play that card')
             self.actionPhaseDisplay()
 
     def comBuyCard(self,command,varList):
@@ -178,19 +179,22 @@ class UI(object):
             name = varList['name']
         except:
             name = varList['name1'] + ' ' + varList['name2']
-        store = self.getStoreByName(name)
-        if store is None:
-            print('Cannot buy that card')
+        try:
+            store = self._game.getStoreByName(name)
+        except ValueError:
+            print('That card does not exist')
         else:
             try:
                 self._turn.buy(store)
+            except InvalidPhase:
+                print('Cannot buy cards during the action phase')
             except InsufficientFunds:
                 print('Not enough money')
             except EmptyPile:
                 print('Store is sold out')
             except InsufficientBuys:
                 print('No remaining buys')
-            finally:
+            else:
                 if self._turn.getBuys() == 0:
                     self.nextPhase()
                 else:
@@ -228,7 +232,8 @@ def main():
     cli.addCommand('play %sname1 %sname2',gameUI.comPlayName)
 
     #Start Game
-    if gameUI.countCardType('Action') == 0:
+    #if gameUI.countCardType('Action') == 0:
+    if not gameUI._hand.hasCardType('Action'):
         gameUI.actionPhaseDisplay(True)
         gameUI.nextPhase()
     else:

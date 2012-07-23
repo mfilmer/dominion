@@ -7,7 +7,7 @@ from errors import *
 DEBUG = False
 
 class game(object):
-    def __init__(self,playerNames,mode='original'):
+    def __init__(self,playerNames,mode='all'):
         self._players = []
         self._numPlayers = len(playerNames)
         self._lastPlayerID = 0
@@ -18,16 +18,16 @@ class game(object):
         self._trash = pile(self)
         #create initial stores
         self._stores = []
-        self._stores.append(store(99,gold1,self))
-        self._stores.append(store(99,gold2,self))
-        self._stores.append(store(99,gold3,self))
+        self._stores.append(store('inf',gold1,self))
+        self._stores.append(store('inf',gold2,self))
+        self._stores.append(store('inf',gold3,self))
         self._stores.append(store(8,victory1,self))
         self._stores.append(store(8,victory3,self))
         self._stores.append(store(8,victory6,self))
-        self._stores.append(store(99,curse,self))
+        self._stores.append(store('inf',curse,self))
 
         #mode specific stores
-        if mode == 'original':
+        if mode == 'all':
             self._stores.append(store(10,village,self))
             self._stores.append(store(10,market,self))
             self._stores.append(store(10,smithy,self))
@@ -38,10 +38,16 @@ class game(object):
             self._stores.append(store(10,workshop,self))
             self._stores.append(store(10,remodel,self))
             self._stores.append(store(10,mine,self))
-            self._stores.append(store(99,councilRoom,self))
+            self._stores.append(store('inf',councilRoom,self))
 
     def getPlayers(self):
         return self._players
+
+    def getStoreByName(self,name):
+        for store in self._stores:
+            if store.getName().lower() == name.lower():
+                return store
+        raise ValueError
 
     def getCurrentPlayer(self):
         return self._currentPlayer
@@ -81,15 +87,13 @@ class player(object):
             self._deck.addNew(victory1)
         self._deck.cleanup()
 
-    def playCard(self,card):
-        """Try to play a card. If the card was successfully played playCard()
-        returns True, if the card cannot be played, playCard() returns False"""
-        print('delete this line of code eventually')
-        print('oh, and this should never show up...')
-        if not card.isPlayable():
-            return False
-        card.play()
-        return True
+    #def playCard(self,card):
+        #print('delete this line of code eventually')
+        #print('oh, and this should never show up...')
+        #if not card.isPlayable():
+            #return False
+        #card.play()
+        #return True
 
     def drawCard(self):
         self._deck.draw()
@@ -142,23 +146,51 @@ class turn(object):
     def getMoney(self):
         return self._money
 
+    def hasRemainingActions(self):
+        return self._actions > 0
+
+    def hasRemainingBuys(self):
+        return self._buys > 0
+
+    def hasRemainingMoney(self):
+        return self._money > 0
+
+    def isPhase(self,phase):
+        if phase.lower() == 'action':
+            return self._phase == 0
+        elif phase.lower() == 'buy':
+            return self._phase == 1
+        elif phase.lower() == 'cleanup':
+            return self._phase == 2
+        elif phase.lower() == 'wait':
+            return self._phase == 3
+        else:
+            raise ValueError(phase + ' is not a valid phase')
+
     def play(self,card):
-        if not card.isPlayable():
-            raise UnplayableCard
+        #if not card.isPlayable():
+            #raise UnplayableCard
+        if self.isPhase('action'):
+            if self._actions < 1:
+                raise InsufficientActions
+            if card.isType('Action'):
+                self._actions -= 1
+            else:
+                raise InvalidPhase
+        if self.isPhase('buy'):
+            if not card.isType('Treasure'):
+                raise InvalidPhase
         player = self.getPlayer()
         for i in range(card._effects['cards']):
             player.drawCard()
         self._addActions(card._effects['actions'])
         self._addMoney(card._effects['money'])
         self._addBuys(card._effects['buys'])
-        if card.getType() == 'Action':
-            self._actions -= 1
         card.play()
 
-
     def buy(self,store):
-        if len(store) == 0:
-            raise EmptyPile
+        if self.isPhase('action'):
+            raise InvalidPhase
         if self._buys == 0:
             raise InsufficientBuys
         cost = store.getCost()
@@ -170,20 +202,19 @@ class turn(object):
 
     def advancePhase(self):
         if self._phase + 1 > phase.wait:
-            raise Exception('Phase advanced past last phase')
+            raise PhaseError('Phase advanced past last phase')
         self._phase += 1
-        if self._phase == phase.buy:
+        if self.isPhase('buy'):
             treasureList = []
             #todo: verify if doing the double loop is necessary
             for card in self._player.getDeck().getHand():
-                if card.getType() == 'Treasure':
+                if card.isType('Treasure'):
                     treasureList.append(card)
             while len(treasureList):
                 self.play(treasureList.pop())
-        if self._phase == phase.cleanup:
+        if self.isPhase('cleanup'):
             self._player.getDeck().cleanup()
             self._phase += 1
-
 
     def _addActions(self,numActions):
         self._actions += numActions
@@ -201,7 +232,7 @@ class card(object):
         self._cost = 0
         self._playablePhases = [phase.action]
         self._name = '<Unnammed>'
-        self._type = 'Action'
+        self._types = ['Action']
         self._fullText = '<Blank>'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
@@ -224,41 +255,33 @@ class card(object):
     def getName(self):
         return self._name
 
-    def getType(self):
-        return self._type
+    def isType(self,type):
+        return type in self._types
 
     def getFullText(self):
         return self._fullText
 
-    def isPlayable(self):
-        #check that the card is owned by a player
-        try:
-            player = self._pile.getOwner()
-        except:
-            if DEBUG:
-                print('unplayable because card not owned by player')
-            return False
-        #check that the card is in a player's hand
-        if self._pile != player.getDeck().getHand():
-            if DEBUG:
-                print('unplayable because card not in a player\'s hand')
-            return False
-        #check that the card is playable during this phase
-        if not player.getTurn().getPhase() in self._playablePhases:
-            if DEBUG:
-                print('unplayable due to phase')
-            return False
-        #check that the card is an action card
-        if self.getType() == 'Action':
-            #check that the player has at least 1 remaining action
-            if player.getTurn().getActions() > 0:
-                return True
-            else:
-                if DEBUG:
-                    print('unplayable due to action count')
-                return False
-        else:
-            return True
+    #def isPlayable(self):
+        ##check that the card is owned by a player
+        #try:
+            #player = self._pile.getOwner()
+        #except:
+            #return False
+        ##check that the card is in a player's hand
+        #if self._pile != player.getDeck().getHand():
+            #return False
+        ##check that the card is playable during this phase
+        #if not player.getTurn().getPhase() in self._playablePhases:
+            #return False
+        ##check that the card is an action card
+        #if self.isType('Action'):
+            ##check that the player has at least 1 remaining action
+            #if player.getTurn().getActions() > 0:
+                #return True
+            #else:
+                #return False
+        #else:
+            #return True
 
     def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 
@@ -293,6 +316,25 @@ class pile(object):
     def getCards(self):
         return self._cards
 
+    def getCardByName(self,name):
+        for card in self:
+            if card.getName().lower() == name.lower():
+                return card
+        raise ValueError
+
+    def hasCardType(self,type):
+        for card in self:
+            if card.isType(type):
+                return True
+        return False
+
+    def countCardsByName(self,name):
+        count = 0
+        for card in self:
+            if card.getName().lower() == name.lower():
+                count += 1
+        return count
+
     def __len__(self):
         return len(self._cards)
 
@@ -311,13 +353,24 @@ class store(pile):
     is (usually) moved from the store to the player's discard pile."""
     def __init__(self,count,newCard,owner):
         pile.__init__(self,owner)
-        for i in range(count):
+        self._inf = False
+        self._newCard = newCard
+        if float(count) == float('inf'):
+            self._inf = True
             self._cards.append(newCard(self))
+        else:
+            for i in range(count):
+                self._cards.append(newCard(self))
         self._cost = self._cards[0].getCost()
         self._name = self._cards[0].getName()
 
     def buy(self,player):
+        if not self._inf:
+            if len(self) == 0:
+                raise EmptyPile
         self._cards[0].move(player.getDeck().getDiscard())
+        if self._inf:
+            self._cards.append(self._newCard(self))
 
     def getCost(self):
         return self._cost
@@ -327,6 +380,12 @@ class store(pile):
 
     def addNew(self,newCard=card):
         raise Exception('cards cannot be added to a store')
+
+    def __len__(self):
+        if self._inf:
+            return float('inf')
+        else:
+            return len(self._cards)
 
 class deck(pile):
     def __init__(self,player):
@@ -393,7 +452,7 @@ class gold1(card):
         self._cost = 0
         self._effects['money'] = 1
         self._playablePhases = [phase.buy]
-        self._type = 'Treasure'
+        self._types = ['Treasure']
         self._fullText = '1$'
 
 #Cost: 3
@@ -404,7 +463,7 @@ class gold2(card):
         self._cost = 3
         self._effects['money'] = 2
         self._playablePhases = [phase.buy]
-        self._type = 'Treasure'
+        self._types = ['Treasure']
         self._fullText = '2$'
 
 #Cost 6
@@ -415,7 +474,7 @@ class gold3(card):
         self._cost = 6
         self._effects['money'] = 3
         self._playablePhases = [phase.buy]
-        self._type = 'Treasure'
+        self._types = ['Treasure']
         self._fullText = '3$'
 
 #Land (or whatever their real name is) cards
@@ -428,7 +487,7 @@ class victory1(card):
         self._cost = 2
         self._victoryPoints = 1
         self._playablePhases = []
-        self._type = 'Victory'
+        self._types = ['Victory']
         self._fullText = '1 VP'
 
 #Cost: 5
@@ -439,7 +498,7 @@ class victory3(card):
         self._cost = 5
         self._victoryPoints = 2
         self._playablePhases = []
-        self._type = 'Victory'
+        self._types = ['Victory']
         self._fullText = '3 VP'
 
 #Cost: 8
@@ -450,7 +509,7 @@ class victory6(card):
         self._cost = 8
         self._victoryPoints = 3
         self._playablePhases = []
-        self._type = 'Victory'
+        self._types = ['Victory']
         self._fullText = '6 VP'
 
 class curse(card):
@@ -460,7 +519,7 @@ class curse(card):
         self._cost = 0
         self._victoryPoints = -1
         self._playablePhases = []
-        self._type = 'Victory'
+        self._types = ['Victory']
         self._fullText = '-1 VP'
 
 #Cost: 2
@@ -495,7 +554,7 @@ class moat(card):
         self._name = 'Moat'
         self._cost = 2
         self._playablePhases = [phase.action,phase.wait]
-        self._type = 'Reaction'
+        self._type = ['Action','Reaction']
         self._effects['cards'] = 2
         self._fullText = 'Cost: 2\n+2 Cards\n\
         When another player plays an Attack card, you may reveal this \
@@ -557,7 +616,7 @@ class bureaucrat(card):
         card.__init__(self,pile)
         self._name = 'Bureaucrat'
         self._cost = 4
-        self._type = 'Attack'
+        self._types = ['Action','Attack']
         self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \
         deck. Each other player reveals a Victory card from his hand and puts \
         it on his deck (or reveals a hand with no Victory cards).'
@@ -638,7 +697,7 @@ class spy(card):
         card.__init__(self,pile)
         self._name = 'Spy'
         self._cost = 4
-        self._type = 'Attack'
+        self._type = ['Action','Attack']
         self._effects['cards'] = 1
         self._effects['actions'] = 1
         self._fullText = 'Cost: 4\nEach player (including you) reveals the \
@@ -653,7 +712,7 @@ class thief(card):
         card.__init__(self)
         self._name = 'Thief'
         self._cost = 4
-        self._type = 'Attack'
+        self._type = ['Action','Attack']
         self._fullText = 'Cost: 4\n Each other player reveals the top 2 cards \
         of his deck. If they revealed any Treasure cards, they trash one of \
         them that you choose. You may gain any or all of these trashed cards. \
@@ -766,7 +825,7 @@ class witch(card):
         card.__init__(self,pile)
         self._name = 'Witch'
         self._cost = 5
-        self._type = 'Attack'
+        self._type = ['Action','Attack']
         self._effects['cards'] = 2
         self._fullText = 'Cost: 5\n+2 cards\nEach other player gains a Curse card'
 

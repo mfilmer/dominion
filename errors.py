@@ -7,5 +7,13 @@ class InsufficientFunds(Exception):
 class InsufficientBuys(Exception):
     pass
 
-class UnplayableCard(Exception):
+class InsufficientActions(Exception):
+    pass
+
+#card is played in the wrong phase
+class InvalidPhase(Exception):
+    pass
+
+#try to advance phase past last phase
+class PhaseError(Exception):
     pass
