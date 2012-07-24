@@ -44,6 +44,7 @@ class game(object):
             self._stores.append(store('inf',chancellor,self))
             self._stores.append(store('inf',moneylender,self))
             self._stores.append(store('inf',feast,self))
+            self._stores.append(store('inf',witch,self))
 
     def getPlayers(self):
         return self._players
@@ -698,8 +699,8 @@ class feast(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Feast'
-        #self._cost = 4
-        self._cost = 0
+        self._cost = 4
+        #self._cost = 0
         self._extraPrompts = ['Card to Gain']
         self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \
         $5'
@@ -955,7 +956,16 @@ class witch(card):
         self._cost = 5
         self._type = ['Action','Attack']
         self._effects['cards'] = 2
-        self._fullText = 'Cost: 5\n+2 cards\nEach other player gains a Curse card'
+        self._fullText = 'Cost: 5\n+2 cards\nEach other player gains a Curse \
+                card'
+
+    def _specialActions(self,extraData=[]):
+        owner = self._pile.getOwner()
+        game = owner.getGame()
+        store = game.getStoreByName('Curse')
+        for player in game.getPlayers():
+            if player != owner:
+                store.buy(player)
 
 #Cost: 6
 #Reveal cards from your deck until you reveal 2 Treasure cards. Put those
