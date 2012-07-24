@@ -43,6 +43,7 @@ class game(object):
             self._stores.append(store('inf',chapel,self))
             self._stores.append(store('inf',chancellor,self))
             self._stores.append(store('inf',moneylender,self))
+            self._stores.append(store('inf',feast,self))
 
     def getPlayers(self):
         return self._players
@@ -697,9 +698,25 @@ class feast(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Feast'
-        self._cost = 4
+        #self._cost = 4
+        self._cost = 0
+        self._extraPrompts = ['Card to Gain']
         self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \
         $5'
+
+    def _specialActions(self,extraData):
+        cardsToGain = map(str.strip,extraData[0].split(','))
+        if len(cardsToGain) != 1:
+            raise ValueError
+        cardToGain = cardsToGain[0].lower()
+        player = self._pile.getOwner()
+        game = player.getGame()
+        store = game.getStoreByName(cardToGain)
+        cost = store.getCost()
+        if cost > 5:
+            raise ValueError
+        store.buy(player)
+        self.move(game.getTrash())
 
 #Cost: 4
 #Worth 1 Victory for every 10 cards in your deck (rounded down)
@@ -755,7 +772,7 @@ class remodel(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Remodel'
-        self._cost = 0
+        self._cost = 4
         self._extraPrompts = ['Card to Trash','Card to Gain']
         self._fullText = 'Cost: 4\nTrash a card from your hand. Gain a card \
         costing up to $2 more than the trashed card'
