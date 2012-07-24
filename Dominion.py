@@ -94,14 +94,6 @@ class player(object):
             self._deck.addNew(victory1)
         self._deck.cleanup()
 
-    #def playCard(self,card):
-        #print('delete this line of code eventually')
-        #print('oh, and this should never show up...')
-        #if not card.isPlayable():
-            #return False
-        #card.play()
-        #return True
-
     def drawCard(self):
         self._deck.draw()
 
@@ -676,13 +668,11 @@ class workshop(card):
     def _specialActions(self,extraData):
         cardsToGain = map(str.strip,extraData[0].split(','))
         if len(cardsToGain) != 1:
-            print('cards to gain: ' + str(cardsToGain))
             raise ValueError
         cardToGain = cardsToGain[0].lower()
         game = self._pile.getOwner().getGame()
         store = game.getStoreByName(cardToGain)
         if store.getCost() > 4:
-            print('too expensive')
             raise ValueError
         player = self._pile.getOwner()
         store.buy(player)
@@ -765,9 +755,32 @@ class remodel(card):
     def __init__(self,pile):
         card.__init__(self,pile)
         self._name = 'Remodel'
-        self._cost = 4
+        self._cost = 0
+        self._extraPrompts = ['Card to Trash','Card to Gain']
         self._fullText = 'Cost: 4\nTrash a card from your hand. Gain a card \
         costing up to $2 more than the trashed card'
+
+    def _specialActions(self,extraData):
+        cardsToTrash = map(str.strip,extraData[0].split(','))
+        cardsToGain = map(str.strip,extraData[1].split(','))
+        if len(cardsToTrash) != 1:
+            raise ValueError
+        if len(cardsToGain) != 1:
+            raise ValueError
+        cardToTrash = cardsToTrash[0].lower()
+        cardToGain = cardsToGain[0].lower()
+        player = self._pile.getOwner()
+        game = player.getGame()
+        trash = game.getTrash()
+        store = game.getStoreByName(cardToGain)
+        deck = player.getDeck()
+        hand = deck.getHand()
+        trashCard = hand.getCardByName(cardToTrash)
+        maxCost = trashCard.getCost() + 2
+        if store.getCost() > maxCost:
+            raise ValueError
+        store.buy(player)
+        trashCard.move(trash)
 
 #Cost: 4
 #+3 cards
@@ -835,7 +848,6 @@ class councilRoom(card):
         card'
         
     def _specialActions(self,extraData=[]):
-        print('special actions')
         owner = self._pile.getOwner()
         players = owner.getGame().getPlayers()
         for player in players:
