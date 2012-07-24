@@ -935,16 +935,32 @@ class mine(card):
         card.__init__(self,pile)
         self._name = 'Mine'
         self._cost = 5
+        self._extraPrompts = ['Card to Trash']
         self._fullText = 'Cost: 5\nTrash a Treasure card from your hand. Gain \
         a Treasure card costing up to $3 more; put it into your hand.'
 
-    #todo: finish
-    def _specialActions(self):
-        #check that the player has at least 1 copper or silver in their hand
-        hand = self._pile.getOwner().getDeck().getHand()
-        if not ('Copper' in hand or 'Silver' in hand):
-            raise MissingCards('Cannot play mine without a copper or silver \
-                    in hand')
+    def _specialActions(self,extraData):
+        cardsToTrash = map(str.strip,extraData[0].split(','))
+        if len(cardsToTrash) != 1:
+            raise ValueError
+        cardToTrash = cardsToTrash[0].lower()
+        player = self._pile.getOwner()
+        deck = player.getDeck()
+        hand = deck.getHand()
+        game = player.getGame()
+        if cardToTrash != 'copper' and cardToTrash != 'silver':
+            raise ValueError
+        if cardToTrash == 'copper':
+            targetCardName = 'Silver'
+        else:
+            targetCardName = 'Gold'
+        trashCard = hand.getCardByName(cardToTrash)
+        targetStore = game.getStoreByName(targetCardName)
+        trashCard.move(game.getTrash())
+        targetStore.buy(player)
+        card = deck.getDiscard().getCardByName(targetCardName)
+        card.move(hand)
+
 
 #Cost: 5
 #+2 Cards
