@@ -669,7 +669,22 @@ class workshop(card):
         card.__init__(self,pile)
         self._name = 'Workshop'
         self._cost = 3
+        self._extraPrompts = ['Card to Gain']
         self._fullText = 'Cost: 3\nGain a card costing up to $4'
+
+    def _specialActions(self,extraData):
+        cardsToGain = map(str.strip,extraData[0].split(','))
+        if len(cardsToGain) != 1:
+            print('cards to gain: ' + str(cardsToGain))
+            raise ValueError
+        cardToGain = cardsToGain[0].lower()
+        game = self._pile.getOwner().getGame()
+        store = game.getStoreByName(cardToGain)
+        if store.getCost() > 4:
+            print('too expensive')
+            raise ValueError
+        player = self._pile.getOwner()
+        store.buy(player)
 
 #Cost: 4
 #Gain a silver card; put it on top of your deck. Each other player reveals a
