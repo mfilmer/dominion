@@ -40,6 +40,8 @@ class game(object):
             self._stores.append(store(10,mine,self))
             self._stores.append(store('inf',councilRoom,self))
             self._stores.append(store('inf',adventurer,self))
+            self._stores.append(store('inf',chapel,self))
+            self._stores.append(store('inf',chancellor,self))
 
     def getPlayers(self):
         return self._players
@@ -59,6 +61,9 @@ class game(object):
 
     def getStores(self):
         return self._stores
+
+    def getTrash(self):
+        return self._trash
 
     #todo: implement
     def _isGameOver(self):
@@ -556,7 +561,6 @@ class cellar(card):
         cardsToDraw = len(tmpPile)
         while len(tmpPile):
             tmpPile[0].move(discard)
-        print('drawing ' + str(cardsToDraw) + ' cards')
         for i in range(cardsToDraw):
             deck.draw()
 
@@ -568,7 +572,27 @@ class chapel(card):
         card.__init__(self,pile)
         self._name = 'Chapel'
         self._cost = 2
+        self._extraPrompts = ['Cards to Trash']
         self._fullText = 'Cost: 2\nTrash up to 4 cards from your hand.'
+
+    def _specialActions(self,extraData):
+        trashCards = map(str.strip,extraData[0].split(','))
+        if len(trashCards) > 4:
+            raise ValueError
+        tmpPile = pile(self)
+        deck = self._pile.getOwner().getDeck()
+        hand = deck.getHand()
+        trash = self._pile.getOwner().getGame().getTrash()
+        try:
+            for name in trashCards:
+                card = hand.getCardByName(name)
+                card.move(tmpPile)
+        except ValueError:
+            while len(tmpPile):
+                tmpPile[0].move(hand)
+            raise
+        while len(tmpPile):
+            tmpPile[0].move(trash)
 
 #Cost: 2
 #+2 Cards
@@ -597,8 +621,22 @@ class chancellor(card):
         self._name = 'Chancellor'
         self._cost = 2
         self._effects['money'] = 2
+        self._extraPrompts = ['Put deck in discard pile [y/n]']
         self._fullText = 'Cost: 3\n+$2\n\
         You may immediately put your deck into your discard pile.'
+
+    def _specialActions(self,extraData):
+        response = map(str.strip,extraData[0].split(','))[0].lower()
+        if response == 'y' or response == 'yes':
+            deck = self._pile.getOwner().getDeck()
+            discard = deck.getDiscard()
+            library = deck.getLibrary()
+            while len(library):
+                library[0].move(discard)
+        elif response == 'n' or response == 'no':
+            pass
+        else:
+            raise ValueError
 
 #Cost: 3
 #+1 Card
