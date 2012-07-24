@@ -42,6 +42,7 @@ class game(object):
             self._stores.append(store('inf',adventurer,self))
             self._stores.append(store('inf',chapel,self))
             self._stores.append(store('inf',chancellor,self))
+            self._stores.append(store('inf',moneylender,self))
 
     def getPlayers(self):
         return self._players
@@ -743,7 +744,19 @@ class moneylender(card):
         card.__init__(self,pile)
         self._name = 'Moneylender'
         self._cost = 4
-        self._fullText = 'Cost: 4\nTrash a Copper from your hand. If you do, +$3'
+        self._fullText = 'Cost: 4\nTrash a Copper from your hand. If you do, \
+                +$3'
+
+    def _specialActions(self,extraData=[]):
+        player = self._pile.getOwner()
+        game = player.getGame()
+        turn = player.getTurn()
+        trash = game.getTrash()
+        deck = player.getDeck()
+        hand = deck.getHand()
+        copper = hand.getCardByName('Copper')
+        copper.move(trash)
+        turn._addMoney(3)
 
 #Cost: 4
 #Trash a card from your hand. Gain a card costing up to $2 more than the trashed
