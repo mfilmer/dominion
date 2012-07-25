@@ -36,11 +36,11 @@ class Column(object):
         self._cols = cols
         self._x = x
         self._y = y
-        self._height = 21
-        self._title = title[:]
+        self._height = 18
         self._titleWindow = curses.newwin(2,cols,y,x)
         self._titleWindow.bkgd(' ',curses.color_pair(1))
-        self._newPad(1)
+        self.setTitle(title[:])
+        self._newPad(5)
 
     def redraw(self):
         title = self._title.center(self._cols)
@@ -48,13 +48,14 @@ class Column(object):
         self._titleWindow.hline(1,0,curses.ACS_HLINE,self._cols)
         self._titleWindow.refresh()
         self._pad.refresh(self._scrollOffset,0,self._y + 2,self._x,\
-                self._height,self._cols + self._x)
+                self._height + 3,self._cols + self._x)
 
     def setTitle(self,newTitle):
         self._title = newTitle[:]
         self._titleWindow.erase()
-        title = self._title.center(self_cols)
+        title = self._title.center(self._cols)
         self._titleWindow.addstr(0,0,title,curses.color_pair(1) | curses.A_BOLD)
+        self._titleWindow.hline(1,0,curses.ACS_HLINE,self._cols)
         self._titleWindow.refresh()
 
     def _newPad(self,rows):
@@ -79,7 +80,12 @@ class Column(object):
                 self._pad.addstr(i,0,text,curses.color_pair(1))
 
     def scroll(self,lines=1):
-        self._scrollOffset += lines
+        if self._scrollOffset + lines < 0:
+            self._scrollOffset = 0
+        elif self._scrollOffset + lines + self._height > self._numRows:
+            self._scrollOffset = self._numRows - self._height
+        else:
+            self._scrollOffset += lines
         self.redraw()
 
     def moveSelection(self,lines=1):
@@ -136,7 +142,6 @@ class Display(object):
 
     def moveSelection(self,lines=1):
         self._currentCol.moveSelection(lines)
-        self._currentCol.redraw()
 
     def getCh(self):
         return self._statusBar.getCh()
@@ -161,30 +166,37 @@ def main(stdscr):
     for i in range(1):
         for i in range(10):
             #display.redraw()
-            sleep(.1)
+            sleep(.05)
             display._currentCol.scroll(1)
         for i in range(10):
             #display.redraw()
-            sleep(.1)
+            sleep(.05)
             display._currentCol.scroll(-1)
-        #display.redraw()
+        display._currentCol._titleWindow.refresh()
 
     stdscr.nodelay(True)
+    display._currentCol.setTitle('aoeu')
     while True:
         char = display.getCh()
         if char == 27:
             display._statusBar.setStatus('exiting')
-            #display._statusBar.refresh()
-            sleep(1)
+            sleep(.5)
             break
+        elif char == 339:       #Page Up
+            display.scroll(-1)
+            display._statusBar.setStatus('page up')
+        elif char == 338:       #Page Down    
+            display.scroll(1)
+            display._statusBar.setStatus('page down')
         elif char == curses.KEY_UP:
-            display.moveSelection(-1)
+            display.moveSelection(1)
             display._statusBar.setStatus('up')
         elif char == curses.KEY_DOWN:
-            display.moveSelection(1)
             display._statusBar.setStatus('down')
         elif char == -1:
             pass
+        # else:
+            # raise Exception(char)
         display.redraw()
 
 if __name__ == '__main__':
