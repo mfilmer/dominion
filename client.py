@@ -30,6 +30,7 @@ class Column(object):
     def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
         self._rowData = []
         self._numRows = 0
+        self._markedRows = set()
         self._scrollOffset = 0
         self._selectedRow = 5
         self._isActiveColumn = False
@@ -78,6 +79,7 @@ class Column(object):
                             curses.A_REVERSE)
             else:
                 self._pad.addstr(i,0,text,curses.color_pair(1))
+        self._markedRows = set()
 
     def scroll(self,lines=1):
         if self._scrollOffset + lines < 0:
@@ -92,7 +94,10 @@ class Column(object):
         self.redraw()
 
     def _deselect(self,row):
-        self._pad.addstr(row,0,self._rowData[row],curses.color_pair(1))
+        if row in self._markedRows:
+            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(2))
+        else:
+            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(1))
 
     def _select(self,row):
         self._pad.addstr(row,0,self._rowData[row], \
@@ -105,6 +110,15 @@ class Column(object):
             return self._selectedRow - self._height - self._scrollOffset + 1
         else:
             return 0
+
+    def toggleMark(self,row):
+        if row in self._markedRows:
+            self._deselect(row)
+            self._markedRows.remove(row)
+        else:
+            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(2))
+            self._markedRows.add(row)
+        self.redraw()
 
     def moveSelection(self,lines=1):
         self._deselect(self._selectedRow)
@@ -127,6 +141,7 @@ class Display(object):
             curses.init_pair(1,-1,-1)
         elif curses.COLORS == 16:
             curses.init_pair(1,0,15)
+        curses.init_pair(2,4,-1)
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
         self._titleWin = curses.newwin(1,80,0,0)
@@ -159,12 +174,15 @@ class Display(object):
     def moveSelection(self,lines=1):
         self._currentCol.moveSelection(lines)
 
+    def toggleMark(self):
+        self._currentCol.toggleMark(self._currentCol._selectedRow)
+
     def getCh(self):
         return self._statusBar.getCh()
 
 def main(stdscr):
     #curses.use_default_colors()
-    #curses.init_pair(1,0,15)
+    #curses.init_pair(1,0,4)
     #stdscr.bkgd(' ',curses.color_pair(1))
     #stdscr.refresh()
     #sleep(2)
@@ -209,10 +227,12 @@ def main(stdscr):
             display._statusBar.setStatus('down')
         elif char == ord('q'):
             break
+        elif char == ord(' '):
+            display.toggleMark()
         elif char == -1:
             pass
-        # else:
-            # raise Exception(char)
+        #else:
+            #raise Exception(char)
         #display.redraw()
 
 if __name__ == '__main__':
