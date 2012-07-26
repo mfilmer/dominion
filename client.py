@@ -1,6 +1,8 @@
 import curses
 from clientUI import *
-from twisted.internet.protocol import Protocol
+from twisted.internet import reactor
+from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.endpoints import TCP4ClientEndpoint
 
 def main(stdscr):
     display = Display(stdscr)

@@ -9,9 +9,10 @@ import argparse
 import Dominion
 
 class Player(LineReceiver):
-    def __init__(self,users,maxPlayers=2):
+    def __init__(self,factory,users,maxPlayers=2):
         self.maxPlayers = maxPlayers
         self.users = users
+        self.factory = factory
         self.name = None
         self.state = 'New'
 
@@ -36,7 +37,9 @@ class Player(LineReceiver):
             if len(self.users) == self.maxPlayers:
                 for name,protocol in self.users.iteritems():
                     self.sendLine('starting')
-                    protocol.state = 'Starting'
+                    protocol.state = 'Waiting'
+                    self.factory.game = dominion.game(self.users.keys())
+                    self.factoryturn = self.factory.game.next()
 
     def lineReceived(self,line):
         if self.state == 'New': #they sent their name. tell everyone about it
@@ -50,9 +53,11 @@ class Player(LineReceiver):
 class GameFactory(Factory):
     def __init__(self):
         self.users = {}
+        self.game = None
+        self.turn = None
 
     def buildProtocol(self,addr):
-        return Player(self.users)
+        return Player(self,self.users)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -60,7 +65,7 @@ def main():
     parser.add_argument('-P','--players',type=int,default=2)
     args = parser.parse_args()
     
-    reactor.listenTCP(args.port,ChatFactory())
+    reactor.listenTCP(args.port,GameFactory())
     reactor.run()
 
 if __name__ == '__main__':
