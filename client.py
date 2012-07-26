@@ -28,12 +28,12 @@ class StatusBar(object):
 
 class Column(object):
     def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
-        self._rowData = []
+        self._rowData = ['']
         self._numRows = 0
         self._markedRows = set()
         self._scrollOffset = 0
-        self._selectedRow = 5
-        self._isActiveColumn = False
+        self._selectedRow = 0
+        self.__isActive = False
         self._cols = cols
         self._x = x
         self._y = y
@@ -42,6 +42,18 @@ class Column(object):
         self._titleWindow.bkgd(' ',curses.color_pair(1))
         self.setTitle(title[:])
         self._newPad(5)
+
+    @property
+    def _isActive(self):
+        return self.__isActive
+    @_isActive.setter
+    def _isActive(self,value):
+        if value:
+            self.__isActive = True
+            self._select(self._selectedRow)
+        else:
+            self.__isActive = False
+            self._deselect(self._selectedRow)
 
     def redraw(self):
         title = self._title.center(self._cols)
@@ -70,11 +82,8 @@ class Column(object):
         self._numRows = len(self._rowData)
         self._newPad(self._numRows)
         for i,text in enumerate(self._rowData):
-            if i == self._selectedRow:
-                if self._isActiveColumn:
-                    self._pad.addstr(i,0,text,curses.color_pair(1) | \
-                            curses.A_REVERSE)
-                else:
+            if i == self._selectedRow and self._isActive:
+                if self._isActive:
                     self._pad.addstr(i,0,text,curses.color_pair(1) | \
                             curses.A_REVERSE)
             else:
@@ -136,13 +145,13 @@ class Column(object):
 class Display(object):
     def __init__(self,stdscr):
         curses.curs_set(0)
-        if curses.COLORS == 8:
+        if curses.COLORS == 8:          #gnome-terminal
             curses.use_default_colors()
             curses.init_pair(1,-1,-1)
-        elif curses.COLORS == 16:
-            curses.use_default_colors()
+            curses.init_pair(2,4,-1)    #marked
+        elif curses.COLORS == 16:       #windows command prompt
             curses.init_pair(1,0,15)
-        curses.init_pair(2,4,-1)
+            curses.init_pair(2,9,15)    #marked (blue on white)
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
         self._titleWin = curses.newwin(1,80,0,0)
@@ -160,6 +169,7 @@ class Display(object):
         self._rightColumn = Column(26,x=54,y=2,title='Test')
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
+        self._currentCol._isActive = True
         self._redraw()
 
     def _redraw(self):
