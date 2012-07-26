@@ -140,6 +140,7 @@ class Display(object):
             curses.use_default_colors()
             curses.init_pair(1,-1,-1)
         elif curses.COLORS == 16:
+            curses.use_default_colors()
             curses.init_pair(1,0,15)
         curses.init_pair(2,4,-1)
         stdscr.bkgd(' ',curses.color_pair(1))
