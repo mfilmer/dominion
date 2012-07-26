@@ -88,18 +88,26 @@ class Column(object):
             self._scrollOffset += lines
         self.redraw()
 
+    def _deselect(self,row):
+        self._pad.addstr(row,0,self._rowData[row],curses.color_pair(1))
+
+    def _select(self,row):
+        self._pad.addstr(row,0,self._rowData[row], \
+                curses.color_pair(1) | curses.A_REVERSE)
+
+    def isSelectionOnScreen(self):
+        pass
+
+
     def moveSelection(self,lines=1):
+        self._deselect(self._selectedRow)
         if self._selectedRow + lines < 0:
-            self._pad.addstr(self._selectedRow,0,\
-                    self._rowData[self._selectedRow],curses.color_pair(1))
-            self._pad.addstr(self._selectedRow + lines,0,\
-                    self._rowData[self._selectedRow],curses.color_pair(1) | \
-                    curses.A_REVERSE)
             self._selectedRow = 0
         elif self._selectedRow + lines > self._numRows - 1:
             self._selectedRow = self._numRows - 1
         else:
             self._selectedRow += lines
+        self._select(self._selectedRow)
         self.redraw()
 
 class Display(object):
@@ -127,9 +135,9 @@ class Display(object):
         self._rightColumn = Column(26,x=54,y=2,title='Test')
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
-        self.redraw()
+        self._redraw()
 
-    def redraw(self):
+    def _redraw(self):
         self._borderWin.refresh()
         self._titleWin.refresh()
         self._leftColumn.redraw()
@@ -138,7 +146,6 @@ class Display(object):
 
     def scroll(self,lines=1):
         self._currentCol.scroll(lines)
-        self._currentCol.redraw()
 
     def moveSelection(self,lines=1):
         self._currentCol.moveSelection(lines)
@@ -165,14 +172,11 @@ def main(stdscr):
     display._leftColumn.setRowData(data)
     for i in range(1):
         for i in range(10):
-            #display.redraw()
             sleep(.05)
             display._currentCol.scroll(1)
         for i in range(10):
-            #display.redraw()
             sleep(.05)
             display._currentCol.scroll(-1)
-        display._currentCol._titleWindow.refresh()
 
     stdscr.nodelay(True)
     display._currentCol.setTitle('aoeu')
@@ -182,22 +186,25 @@ def main(stdscr):
             display._statusBar.setStatus('exiting')
             sleep(.5)
             break
-        elif char == 339:       #Page Up
-            display.scroll(-1)
-            display._statusBar.setStatus('page up')
-        elif char == 338:       #Page Down    
+        elif char == curses.KEY_NPAGE:
             display.scroll(1)
             display._statusBar.setStatus('page down')
+        elif char == curses.KEY_PPAGE:
+            display.scroll(-1)
+            display._statusBar.setStatus('page up')
         elif char == curses.KEY_UP:
-            display.moveSelection(1)
+            display.moveSelection(-1)
             display._statusBar.setStatus('up')
         elif char == curses.KEY_DOWN:
+            display.moveSelection(1)
             display._statusBar.setStatus('down')
+        elif char == ord('q'):
+            break
         elif char == -1:
             pass
         # else:
             # raise Exception(char)
-        display.redraw()
+        #display.redraw()
 
 if __name__ == '__main__':
     curses.wrapper(main)
