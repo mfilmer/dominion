@@ -83,7 +83,10 @@ class Column(object):
         if self._scrollOffset + lines < 0:
             self._scrollOffset = 0
         elif self._scrollOffset + lines + self._height > self._numRows:
-            self._scrollOffset = self._numRows - self._height
+            if self._numRows < self._height:
+                self._scrollOffset = 0
+            else:
+                self._scrollOffset = self._numRows - self._height
         else:
             self._scrollOffset += lines
         self.redraw()
@@ -173,7 +176,7 @@ def main(stdscr):
 
     display = Display(stdscr)
     data = []
-    for i in range(10):
+    for i in range(30):
         data.append('row ' + str(i))
     display._leftColumn.setRowData(data)
     for i in range(1):
