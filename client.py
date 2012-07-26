@@ -175,6 +175,30 @@ class Display(object):
     def moveSelection(self,lines=1):
         self._currentCol.moveSelection(lines)
 
+    def changeColSelect(self,num):
+        if num == 0:
+            raise ValueError
+        if num < 0:
+            if self._currentCol == self._centerColumn:
+                self._centerColumn._isActive = False
+                self._currentCol = self._leftColumn
+                self._centerColumn.redraw()
+            elif self._currentCol == self._rightColumn:
+                self._rightColumn._isActive = False
+                self._currentCol = self._centerColumn
+                self._rightColumn.redraw()
+        elif num > 0:
+            if self._currentCol == self._centerColumn:
+                self._centerColumn._isActive = False
+                self._currentCol = self._rightColumn
+                self._centerColumn.redraw()
+            elif self._currentCol == self._leftColumn:
+                self._leftColumn._isActive = False
+                self._currentCol = self._centerColumn
+                self._leftColumn.redraw()
+        self._currentCol._isActive = True
+        self._currentCol.redraw()
+
     def toggleMark(self):
         self._currentCol.toggleMark(self._currentCol._selectedRow)
 
@@ -198,6 +222,9 @@ def main(stdscr):
     for i in range(30):
         data.append('row ' + str(i))
     display._leftColumn.setRowData(data)
+    display._centerColumn.setRowData(data)
+    display._rightColumn.setRowData(data)
+    display._redraw()
     for i in range(1):
         for i in range(10):
             sleep(.05)
@@ -226,6 +253,10 @@ def main(stdscr):
         elif char == curses.KEY_DOWN:
             display.moveSelection(1)
             display._statusBar.setStatus('down')
+        elif char == curses.KEY_LEFT:
+            display.changeColSelect(-1)
+        elif char == curses.KEY_RIGHT:
+            display.changeColSelect(1)
         elif char == ord('q'):
             break
         elif char == ord(' '):
