@@ -95,9 +95,13 @@ class Column(object):
         self._pad.addstr(row,0,self._rowData[row], \
                 curses.color_pair(1) | curses.A_REVERSE)
 
-    def isSelectionOnScreen(self):
-        pass
-
+    def getSelectionOffset(self):
+        if self._selectedRow < self._scrollOffset:
+            return self._selectedRow - self._scrollOffset
+        elif self._selectedRow >= self._scrollOffset + self._height:
+            return self._selectedRow - self._height - self._scrollOffset + 1
+        else:
+            return 0
 
     def moveSelection(self,lines=1):
         self._deselect(self._selectedRow)
@@ -108,6 +112,8 @@ class Column(object):
         else:
             self._selectedRow += lines
         self._select(self._selectedRow)
+        #scroll if needed
+        self.scroll(self.getSelectionOffset())
         self.redraw()
 
 class Display(object):
@@ -167,7 +173,7 @@ def main(stdscr):
 
     display = Display(stdscr)
     data = []
-    for i in range(100):
+    for i in range(10):
         data.append('row ' + str(i))
     display._leftColumn.setRowData(data)
     for i in range(1):
