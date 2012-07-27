@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import curses
 from clientUI import *
 from twisted.internet import reactor
