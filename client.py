@@ -8,6 +8,9 @@ import argparse
 
 import getpass      #used to get logged in username
 
+def getScreen(stdscr):
+    return stdscr
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('name',type=str,default=getpass.getuser())
@@ -16,8 +19,12 @@ def main():
             default='mattfilmer.student.rit.edu') 
     args = parser.parse_args()
     
+    stdscr = curses.wrapper(getScreen)
+    display = Display(stdscr)
+    
     from twisted.internet import reactor
-    reactor.connectTCP(args.address,args.port,factory)
+    reactor.addReader(display)
+    #reactor.connectTCP(args.address,args.port,factory)
     reactor.run()
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ import curses.wrapper
 #import curses.textpad
 from time import sleep      #here for test purposes only. will be removed
 import string
+from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
     def __init__(self):
@@ -142,7 +143,7 @@ class Column(object):
         self.scroll(self.getSelectionOffset())
         self.redraw()
 
-class Display(object):
+class Display(object,Protocol):
     def __init__(self,stdscr):
         curses.curs_set(0)
         if curses.COLORS == 8:          #gnome-terminal
@@ -214,3 +215,48 @@ class Display(object):
 
     def getCh(self):
         return self._statusBar.getCh()
+
+    def doRead(self):           #called by twisted's reactor
+        char = self.getCh()
+        if char == 27:
+            self._statusBar.setStatus('exiting')
+            sleep(.5)
+            raise Exception('Quit')
+        elif char == curses.KEY_NPAGE:
+            self.scroll(1)
+            self._statusBar.setStatus('page down')
+        elif char == curses.KEY_PPAGE:
+            self.scroll(-1)
+            self._statusBar.setStatus('page up')
+        elif char == curses.KEY_UP:
+            self.moveSelection(-1)
+            self._statusBar.setStatus('up')
+        elif char == curses.KEY_DOWN:
+            self.moveSelection(1)
+            self._statusBar.setStatus('down')
+        elif char == curses.KEY_LEFT:
+            self.changeColSelect(-1)
+        elif char == curses.KEY_RIGHT:
+            self.changeColSelect(1)
+        elif char == ord('q'):
+            raise Exception('Quit')
+        elif char == ord(' '):
+            self.toggleMark()
+        # elif char == -1:
+            # pass
+        # else:
+            # raise Exception(char)
+
+    def connectionLost(self,reason):
+        reactor.stop()
+        raise Exception('no connection')
+
+    def connectionFailed(self):
+        reactor.stop()
+        raise Exception('no connection')
+
+    def fileno(self):
+        """ We want to select on FD 0 """
+        return 0
+
+    def logPrefix(self): return 'CursesClient'
