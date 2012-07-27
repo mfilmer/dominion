@@ -18,7 +18,7 @@ class Player(LineReceiver):
 
     def connectionMade(self):
         playerCount = len(self.users)
-        self.sendLine(playerCount)
+        self.sendLine(str(playerCount))
         for user in self.users:
             self.sendLine(user)
 
@@ -29,22 +29,26 @@ class Player(LineReceiver):
     def registerNewPlayer(self,name):
         if self.users.has_key(name):
             self.sendLine('taken')
+            print(name + ' already taken')
         else:
-            self.name = line
+            self.name = name
+            print(name + ' has joined')
             self.state = 'InLobby'
+            self.users[name] = self
             for name,protocol in self.users.iteritems():
-                self.sendLine('newplayer ' + line)
+                self.sendLine('newplayer ' + name)
             if len(self.users) == self.maxPlayers:
                 for name,protocol in self.users.iteritems():
                     self.sendLine('starting')
                     protocol.state = 'Waiting'
-                    self.factory.game = dominion.game(self.users.keys())
+                    self.factory.game = Dominion.game(self.users.keys())
                     self.factoryturn = self.factory.game.next()
 
     def lineReceived(self,line):
         if self.state == 'New': #they sent their name. tell everyone about it
             self.registerNewPlayer(line)
         elif self.state == 'InLobby':
+            print(line)
             pass    #perhaps this is a chat message. implement later
         else:       #sould not have received this line
             print('received bad line from ' + self.name + ': ')
