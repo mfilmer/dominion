@@ -120,10 +120,22 @@ class TwistedDisplay(Display):
             reactor.stop()
         elif char == ord(' '):
             self.toggleMark()
-        # elif char == -1:
-            # pass
-        # else:
-            # raise Exception(char)
+        elif char == curses.KEY_ENTER:
+            raise Exception
+        elif char == ord('\t'):
+            #will eventually switch between different player's screens
+            pass
+        elif char == ord('?'):
+            #will eventually give card info
+            pass
+        elif char == 337:   #shift up
+            self.client.display.statusHistory(-1)
+        elif char == 336:   #shift down
+            self.client.display.statusHistory(1)
+        #elif char == -1:
+            #pass
+        #else:
+            #raise Exception(char)
 
     def setClient(self,client):
         self.client = client
@@ -188,16 +200,17 @@ class TwistedDisplay(Display):
                         self._store[name] = (cost,float('inf'))
                 data = ['('+str(count)+') $'+str(cost)+' '+name \
                         for name,(cost,count) in self._store.items()]
-                #for i,row in enumerate(data):
-                    #if row[1:4] == 'inf':
-                        #data[i] = data[i][0:1] + u'\u221e' + data[i][4:]
+                for i,row in enumerate(data):
+                    if row[1:4] == 'inf':
+                        data[i] = data[i][0:1] + '*' + data[i][4:]
                 column.setRowData(data)
 
     #twisted stuff that is necessary but not really helpful
     def logPrefix(self): return 'CursesClient'
 
     def connectionLost(self,reason):
-        raise Exception('connection lost')
+        pass
+        #raise Exception('connection lost')
         #reactor.stop()
 
     def fileno(self):

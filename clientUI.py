@@ -9,24 +9,45 @@ from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
     def __init__(self):
+        self._statusHistory = ['']
         self._window = curses.newwin(1,80,23,0)
         self._window.keypad(True)
         self._window.nodelay(True)
         self._window.bkgd(' ',curses.color_pair(1))
-        self._status = ''
-        self.setStatus('test status')
+        self._index = -1
 
     def setStatus(self,newStatus):
-        self._status = newStatus
+        self._statusHistory.append(newStatus)
         self._window.erase()
-        self._window.addstr(0,0,newStatus,curses.color_pair(1))
-        self._window.refresh()
+        if self._index == -1:
+            self._window.addstr(0,0,self._statusHistory[-1],\
+                    curses.color_pair(1))
+        else:
+            self._index -= 1
+            self._window.addstr(0,0,str(-self._index-1)+': '+\
+                    self._statusHistory[self._index],curses.color_pair(1))
+        self.refresh()
 
     def getCh(self):
         return self._window.getch()
 
     def refresh(self):
         self._window.refresh()
+
+    def scrollHistory(self,step):
+        self._index += step
+        if self._index > -1:
+            self._index = -1
+        elif self._index < -len(self._statusHistory):
+            self._index = -len(self._statusHistory)
+        self._window.erase()
+        if self._index == -1:
+            self._window.addstr(0,0,self._statusHistory[-1],\
+                    curses.color_pair(1))
+        else:
+            self._window.addstr(0,0,str(-self._index-1)+': '+\
+                    self._statusHistory[self._index],curses.color_pair(1))
+        self.refresh()
 
 class Column(object):
     def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
@@ -244,4 +265,7 @@ class Display(object):
 
     def setStatus(self,status):
         self._statusBar.setStatus(status)
+
+    def statusHistory(self,step):
+        self._statusBar.scrollHistory(step)
 
