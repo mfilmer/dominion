@@ -227,3 +227,6 @@ class Display(object):
     def getCh(self):
         return self._statusBar.getCh()
 
+    def setStatus(self,status):
+        self._statusBar.setStatus(status)
+

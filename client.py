@@ -16,6 +16,7 @@ class GameClient(LineReceiver):
         self.factory = factory
         self.name = self.factory.name
         self.display.setClient(self)
+        self.gameRunning = False
 
     def lineReceived(self,line):
         if line == 'name?':
@@ -31,6 +32,9 @@ class GameClient(LineReceiver):
             self.display._leftColumn.setTitle('Hand')
             self.display._centerColumn.setTitle('Field')
             self.display._rightColumn.setTitle('Store')
+            self.gameRunning = True
+        elif line == 'your turn':
+            self.display.setStatus('My Turn')
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
                 self.display.hand = eval(line[12:])
@@ -47,6 +51,8 @@ class GameClient(LineReceiver):
         elif line[0:11] == 'newPlayer: ':
             self.display.addPlayer(line[11:])
         elif line[0:12] == 'dropPlayer: ':
+            if self.gameRunning:
+                self.display.setStatus('Player ' + line[12:] + ' has dropped')
             self.display.dropPlayer(line[12:])
         else:
             raise Exception('Unknown Message: ' + line)
@@ -54,7 +60,7 @@ class GameClient(LineReceiver):
     def connectionLost(self,reason):
         pass
         #raise Exception('connection lost')
-        #reactor.stop()
+        reactor.stop()
 
     @property
     def hand(self):

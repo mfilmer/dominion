@@ -28,6 +28,33 @@ class Player(LineReceiver):
                 protocol.sendLine('dropPlayer: ' + self.name)
             print(self.name + ' has left')
 
+    def startGame(self):
+        print('Starting Game...')
+        self.factory.game = Dominion.game(self.users.keys())
+        self.factoryturn = self.factory.game.next()
+        players = self.factory.game.getPlayers()
+        stores = self.factory.game.getStores()
+        dStores = {}
+        for store in stores:
+            try:
+                dStores[store.getName()]=(store.getCost(),len(store))
+            except OverflowError:
+                dStores[store.getName()]=(store.getCost(),u'\u221E')
+        stores = repr(dStores)
+        for name,protocol in self.users.iteritems():
+            protocol.sendLine('starting')
+            protocol.state = 'Waiting'
+            protocol.player = [p for p in players if p.getName() == name][0]
+            hand = protocol.player.getDeck().getHand()
+            dHand = {}
+            for card in hand:
+                name = card.getName()
+                dHand[name] = hand.countCardsByName(name)
+            hand = repr(dHand)
+            protocol.sendLine('data: hand: ' + hand)
+            print(protocol.name + '\'s starting hand: ' + hand)
+            protocol.sendLine('data: stores: ' + stores)
+
     def registerNewPlayer(self,name):
         if self.users.has_key(name):
             self.sendLine('taken')
@@ -40,38 +67,13 @@ class Player(LineReceiver):
             self.users[name] = self
             for name,protocol in self.users.iteritems():
                 if protocol == self:
-                    playerCount = len(self.users)
+                    pass
                     for name,protocol in self.users.iteritems():
                         self.sendLine('existingPlayer: ' + name)
                 else:
-                    protocol.sendLine('newPlayer: ' + name)
+                    protocol.sendLine('newPlayer: ' + self.name)
             if len(self.users) == self.maxPlayers:
-                print('Starting Game...')
-                self.factory.game = Dominion.game(self.users.keys())
-                self.factoryturn = self.factory.game.next()
-                players = self.factory.game.getPlayers()
-                stores = self.factory.game.getStores()
-                dStores = {}
-                for store in stores:
-                    try:
-                        dStores[store.getName()]=(store.getCost(),len(store))
-                    except OverflowError:
-                        dStores[store.getName()]=(store.getCost(),u'\u221E')
-                stores = repr(dStores)
-                for name,protocol in self.users.iteritems():
-                    protocol.sendLine('starting')
-                    protocol.state = 'Waiting'
-                    protocol.player = [p for p in players if p.getName() == \
-                            name][0]
-                    hand = protocol.player.getDeck().getHand()
-                    dHand = {}
-                    for card in hand:
-                        name = card.getName()
-                        dHand[name] = hand.countCardsByName(name)
-                    hand = repr(dHand)
-                    protocol.sendLine('data: hand: ' + hand)
-                    print(protocol.name + '\'s starting hand: ' + hand)
-                    protocol.sendLine('data: stores: ' + stores)
+                self.startGame()
 
     def lineReceived(self,line):
         if self.state == 'New': #they sent their name. tell everyone about it
@@ -84,13 +86,14 @@ class Player(LineReceiver):
             print(line)
 
 class GameFactory(Factory):
-    def __init__(self):
+    def __init__(self,maxPlayers = 2):
         self.users = {}
         self.game = None
         self.turn = None
+        self.maxPlayers = maxPlayers
 
     def buildProtocol(self,addr):
-        return Player(self,self.users)
+        return Player(self,self.users,self.maxPlayers)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -98,7 +101,7 @@ def main():
     parser.add_argument('-P','--players',type=int,default=2)
     args = parser.parse_args()
     
-    reactor.listenTCP(args.port,GameFactory())
+    reactor.listenTCP(args.port,GameFactory(args.players))
     reactor.run()
 
 if __name__ == '__main__':
