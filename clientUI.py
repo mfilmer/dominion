@@ -30,7 +30,7 @@ class StatusBar(object):
 
 class Column(object):
     def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
-        self._rowData = ['']
+        self._rowData = []
         self._numRows = 0
         self._markedRows = set()
         self._scrollOffset = 0
@@ -114,8 +114,9 @@ class Column(object):
             self._pad.addstr(row,0,self._rowData[row],curses.color_pair(1))
 
     def _select(self,row):
-        self._pad.addstr(row,0,self._rowData[row], \
-                curses.color_pair(1) | curses.A_REVERSE)
+        if len(self._rowData):
+            self._pad.addstr(row,0,self._rowData[row], \
+                    curses.color_pair(1) | curses.A_REVERSE)
 
     def getSelectionOffset(self):
         if self._selectedRow < self._scrollOffset:
@@ -143,9 +144,11 @@ class Column(object):
         else:
             self._selectedRow += lines
         self._select(self._selectedRow)
-        #scroll if needed
         self.scroll(self.getSelectionOffset())
         self.redraw()
+
+    def __len__(self):
+        return len(self._rowData)
 
 class Display(object):
     def __init__(self,stdscr):
@@ -202,22 +205,34 @@ class Display(object):
             raise ValueError
         if num < 0:
             if self._currentCol == self._centerColumn:
-                self._centerColumn._isActive = False
-                self._currentCol = self._leftColumn
-                self._centerColumn.redraw()
+                if len(self._leftColumn):
+                    self._centerColumn._isActive = False
+                    self._currentCol = self._leftColumn
+                    self._centerColumn.redraw()
             elif self._currentCol == self._rightColumn:
-                self._rightColumn._isActive = False
-                self._currentCol = self._centerColumn
-                self._rightColumn.redraw()
+                if len(self._centerColumn):
+                    self._rightColumn._isActive = False
+                    self._currentCol = self._centerColumn
+                    self._rightColumn.redraw()
+                elif len(self._leftColumn):
+                    self._rightColumn._isActive = False
+                    self._currentCol = self._leftColumn
+                    self._rightColumn.redraw()
         elif num > 0:
             if self._currentCol == self._centerColumn:
-                self._centerColumn._isActive = False
-                self._currentCol = self._rightColumn
-                self._centerColumn.redraw()
+                if len(self._rightColumn):
+                    self._centerColumn._isActive = False
+                    self._currentCol = self._rightColumn
+                    self._centerColumn.redraw()
             elif self._currentCol == self._leftColumn:
-                self._leftColumn._isActive = False
-                self._currentCol = self._centerColumn
-                self._leftColumn.redraw()
+                if len(self._centerColumn):
+                    self._leftColumn._isActive = False
+                    self._currentCol = self._centerColumn
+                    self._leftColumn.redraw()
+                elif len(self._rightColumn):
+                    self._leftColumn._isActive = False
+                    self._currentCol = self._rightColumn
+                    self._leftColumn.redraw()
         self._currentCol._isActive = True
         self._currentCol.redraw()
 

@@ -17,6 +17,7 @@ class GameClient(LineReceiver):
         self.name = self.factory.name
         self.display.setClient(self)
         self.gameRunning = False
+        self.myTurn = False
 
     def lineReceived(self,line):
         if line == 'name?':
@@ -35,6 +36,7 @@ class GameClient(LineReceiver):
             self.gameRunning = True
         elif line == 'your turn':
             self.display.setStatus('My Turn')
+            self.myTurn = True
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
                 self.display.hand = eval(line[12:])
@@ -42,10 +44,15 @@ class GameClient(LineReceiver):
                 self.display.field = eval(line[13:])
             elif line[6:15] == 'discard: ':
                 self.display.discard = eval(line[15:])
-            elif line[6:14] == 'stores: ':
-                self.display.stores = eval(line[14:])
+            elif line[6:13] == 'store: ':
+                self.display.store = eval(line[13:])
             else:
+                with open(self.name+'.log','w') as f:
+                    f.write('Unknown Message: ' + line)
                 raise Exception('Unknown Message: ' + line)
+        elif line [0:6] == 'turn: ':
+            self.display.setStatus(line[6:] + '\'s turn')
+            self.myTurn = False
         elif line[0:16] == 'existingPlayer: ':
             self.display.addPlayer(line[16:])
         elif line[0:11] == 'newPlayer: ':
@@ -175,8 +182,15 @@ class TwistedDisplay(Display):
         self._store = value
         for contents,column in self._columns:
             if contents == 'Store':
+                for name in self._store:
+                    cost,count = self._store[name]
+                    if count == u'\u221e':
+                        self._store[name] = (cost,float('inf'))
                 data = ['('+str(count)+') $'+str(cost)+' '+name \
                         for name,(cost,count) in self._store.items()]
+                #for i,row in enumerate(data):
+                    #if row[1:4] == 'inf':
+                        #data[i] = data[i][0:1] + u'\u221e' + data[i][4:]
                 column.setRowData(data)
 
     #twisted stuff that is necessary but not really helpful

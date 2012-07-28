@@ -31,7 +31,7 @@ class Player(LineReceiver):
     def startGame(self):
         print('Starting Game...')
         self.factory.game = Dominion.game(self.users.keys())
-        self.factoryturn = self.factory.game.next()
+        self.factory.turn = self.factory.game.next()
         players = self.factory.game.getPlayers()
         stores = self.factory.game.getStores()
         dStores = {}
@@ -41,6 +41,7 @@ class Player(LineReceiver):
             except OverflowError:
                 dStores[store.getName()]=(store.getCost(),u'\u221E')
         stores = repr(dStores)
+        currentPlayerName = self.factory.turn.getPlayer().getName()
         for name,protocol in self.users.iteritems():
             protocol.sendLine('starting')
             protocol.state = 'Waiting'
@@ -48,12 +49,16 @@ class Player(LineReceiver):
             hand = protocol.player.getDeck().getHand()
             dHand = {}
             for card in hand:
-                name = card.getName()
-                dHand[name] = hand.countCardsByName(name)
+                cardName = card.getName()
+                dHand[cardName] = hand.countCardsByName(cardName)
             hand = repr(dHand)
             protocol.sendLine('data: hand: ' + hand)
             print(protocol.name + '\'s starting hand: ' + hand)
-            protocol.sendLine('data: stores: ' + stores)
+            protocol.sendLine('data: store: ' + stores)
+            if name == currentPlayerName:
+                protocol.sendLine('your turn')
+            else:
+                protocol.sendLine('turn: ' + name)
 
     def registerNewPlayer(self,name):
         if self.users.has_key(name):
