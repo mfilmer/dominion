@@ -11,6 +11,7 @@ class StatusBar(object):
     def __init__(self):
         self._window = curses.newwin(1,80,23,0)
         self._window.keypad(True)
+        self._window.nodelay(True)
         self._window.bkgd(' ',curses.color_pair(1))
         self._status = ''
         self.setStatus('test status')
@@ -143,7 +144,7 @@ class Column(object):
         self.scroll(self.getSelectionOffset())
         self.redraw()
 
-class Display(object,Protocol):
+class Display(object):
     def __init__(self,stdscr):
         curses.curs_set(0)
         if curses.COLORS == 8:          #gnome-terminal
@@ -155,6 +156,7 @@ class Display(object,Protocol):
             curses.init_pair(2,9,15)    #marked (blue on white)
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
+        self._stdscr.nodelay(True)
         self._titleWin = curses.newwin(1,80,0,0)
         self._titleWin.bkgd(' ',curses.color_pair(1))
         self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
@@ -171,6 +173,7 @@ class Display(object,Protocol):
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
         self._currentCol._isActive = True
+        self._currentCol.setRowData(map(str,range(50)))
         self._redraw()
 
     def _redraw(self):
@@ -179,6 +182,7 @@ class Display(object,Protocol):
         self._leftColumn.redraw()
         self._centerColumn.redraw()
         self._rightColumn.redraw()
+        self._statusBar.refresh()
 
     def scroll(self,lines=1):
         self._currentCol.scroll(lines)
@@ -216,47 +220,3 @@ class Display(object,Protocol):
     def getCh(self):
         return self._statusBar.getCh()
 
-    def doRead(self):           #called by twisted's reactor
-        char = self.getCh()
-        if char == 27:
-            self._statusBar.setStatus('exiting')
-            sleep(.5)
-            raise Exception('Quit')
-        elif char == curses.KEY_NPAGE:
-            self.scroll(1)
-            self._statusBar.setStatus('page down')
-        elif char == curses.KEY_PPAGE:
-            self.scroll(-1)
-            self._statusBar.setStatus('page up')
-        elif char == curses.KEY_UP:
-            self.moveSelection(-1)
-            self._statusBar.setStatus('up')
-        elif char == curses.KEY_DOWN:
-            self.moveSelection(1)
-            self._statusBar.setStatus('down')
-        elif char == curses.KEY_LEFT:
-            self.changeColSelect(-1)
-        elif char == curses.KEY_RIGHT:
-            self.changeColSelect(1)
-        elif char == ord('q'):
-            raise Exception('Quit')
-        elif char == ord(' '):
-            self.toggleMark()
-        # elif char == -1:
-            # pass
-        # else:
-            # raise Exception(char)
-
-    def connectionLost(self,reason):
-        reactor.stop()
-        raise Exception('no connection')
-
-    def connectionFailed(self):
-        reactor.stop()
-        raise Exception('no connection')
-
-    def fileno(self):
-        """ We want to select on FD 0 """
-        return 0
-
-    def logPrefix(self): return 'CursesClient'
