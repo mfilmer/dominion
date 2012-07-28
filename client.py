@@ -4,10 +4,30 @@ import curses
 from clientUI import *
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory
+from twisted.protocols.basic import LineReceiver
 
 import argparse
 
 import getpass      #used to get logged in username
+
+class GameClient(LineReceiver):
+    def __init__(self):
+        self.state = 'New'
+
+    def lineReceived(self,line):
+        if line == 'name?':
+            self.sendLine(self.factory.name)
+        if line == 'taken':
+            raise Exception('name taken')
+
+    def connectionLost(self,reason):
+        reactor.stop()
+
+class GameFactory(ClientFactory):
+    protocol = GameClient
+
+    def __init__(self,name):
+        self.name = name
 
 class TwistedDisplay(Display):
     def doRead(self):           #called by twisted's reactor
@@ -15,7 +35,7 @@ class TwistedDisplay(Display):
         if char == 27:
             self._statusBar.setStatus('exiting')
             sleep(.5)
-            raise Exception('Quit')
+            reactor.stop()
         elif char == curses.KEY_NPAGE:
             self.scroll(1)
             self._statusBar.setStatus('page down')
@@ -33,7 +53,7 @@ class TwistedDisplay(Display):
         elif char == curses.KEY_RIGHT:
             self.changeColSelect(1)
         elif char == ord('q'):
-            raise Exception('Quit')
+            reactor.stop()
         elif char == ord(' '):
             self.toggleMark()
         # elif char == -1:
@@ -58,9 +78,11 @@ def main(stdscr):
     args = parser.parse_args()
     
     display = TwistedDisplay(stdscr)
-    
+
+    factory = GameFactory(args.name)
+
     reactor.addReader(display)
-    #reactor.connectTCP(args.address,args.port,factory)
+    reactor.connectTCP(args.address,args.port,factory)
     reactor.run()
 
 if __name__ == '__main__':

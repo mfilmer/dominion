@@ -173,7 +173,9 @@ class Display(object):
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
         self._currentCol._isActive = True
-        self._currentCol.setRowData(map(str,range(50)))
+        self._leftColumn.setRowData(map(str,range(50)))
+        self._centerColumn.setRowData(map(str,range(50)))
+        self._rightColumn.setRowData(map(str,range(50)))
         self._redraw()
 
     def _redraw(self):
