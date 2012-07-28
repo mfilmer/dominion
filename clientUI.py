@@ -80,6 +80,8 @@ class Column(object):
 
     def setRowData(self,data):
         self._rowData = data[:] #make a copy of the data
+        self._pad.erase()
+        self.redraw()
         del(self._pad)
         self._numRows = len(self._rowData)
         self._newPad(self._numRows)
@@ -91,6 +93,7 @@ class Column(object):
             else:
                 self._pad.addstr(i,0,text,curses.color_pair(1))
         self._markedRows = set()
+        self.redraw()
 
     def scroll(self,lines=1):
         if self._scrollOffset + lines < 0:
@@ -167,7 +170,7 @@ class Display(object):
         self._borderWin.vline(2,26,curses.ACS_VLINE,20)
         self._borderWin.vline(2,53,curses.ACS_VLINE,20)
         self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._leftColumn = Column(26,x=0,y=2,title='Test')
+        self._leftColumn = Column(26,x=0,y=2,title='Hand')
         self._centerColumn = Column(26,x=27,y=2,title='Test')
         self._rightColumn = Column(26,x=54,y=2,title='Test')
         self._statusBar = StatusBar()
@@ -176,6 +179,8 @@ class Display(object):
         self._leftColumn.setRowData(map(str,range(50)))
         self._centerColumn.setRowData(map(str,range(50)))
         self._rightColumn.setRowData(map(str,range(50)))
+        self._columns = zip(['Hand',None,None],[self._leftColumn,\
+                self._centerColumn,self._rightColumn])
         self._redraw()
 
     def _redraw(self):
