@@ -42,14 +42,22 @@ class Player(LineReceiver):
                 if protocol == self:
                     playerCount = len(self.users)
                     for name,protocol in self.users.iteritems():
-                        self.sendLine('existingplayer: ' + name)
+                        self.sendLine('existingPlayer: ' + name)
                 else:
-                    protocol.sendLine('newplayer: ' + name)
+                    protocol.sendLine('newPlayer: ' + name)
             if len(self.users) == self.maxPlayers:
                 print('Starting Game...')
                 self.factory.game = Dominion.game(self.users.keys())
                 self.factoryturn = self.factory.game.next()
                 players = self.factory.game.getPlayers()
+                stores = self.factory.game.getStores()
+                dStores = {}
+                for store in stores:
+                    try:
+                        dStores[store.getName()]=(store.getCost(),len(store))
+                    except OverflowError:
+                        dStores[store.getName()]=(store.getCost(),u'\u221E')
+                stores = repr(dStores)
                 for name,protocol in self.users.iteritems():
                     protocol.sendLine('starting')
                     protocol.state = 'Waiting'
@@ -61,8 +69,9 @@ class Player(LineReceiver):
                         name = card.getName()
                         dHand[name] = hand.countCardsByName(name)
                     hand = repr(dHand)
-                    protocol.sendLine('cmd: hand: ' + hand)
-                    print(hand)
+                    protocol.sendLine('data: hand: ' + hand)
+                    print(protocol.name + '\'s starting hand: ' + hand)
+                    protocol.sendLine('data: stores: ' + stores)
 
     def lineReceived(self,line):
         if self.state == 'New': #they sent their name. tell everyone about it

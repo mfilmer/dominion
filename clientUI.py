@@ -170,16 +170,16 @@ class Display(object):
         self._borderWin.vline(2,26,curses.ACS_VLINE,20)
         self._borderWin.vline(2,53,curses.ACS_VLINE,20)
         self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._leftColumn = Column(26,x=0,y=2,title='Hand')
-        self._centerColumn = Column(26,x=27,y=2,title='Test')
-        self._rightColumn = Column(26,x=54,y=2,title='Test')
+        self._leftColumn = Column(26,x=0,y=2,title='Players')
+        self._centerColumn = Column(26,x=27,y=2,title='')
+        self._rightColumn = Column(26,x=54,y=2,title='')
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
         self._currentCol._isActive = True
-        self._leftColumn.setRowData(map(str,range(50)))
-        self._centerColumn.setRowData(map(str,range(50)))
-        self._rightColumn.setRowData(map(str,range(50)))
-        self._columns = zip(['Hand',None,None],[self._leftColumn,\
+        #self._leftColumn.setRowData(map(str,range(50)))
+        #self._centerColumn.setRowData(map(str,range(50)))
+        #self._rightColumn.setRowData(map(str,range(50)))
+        self._columns = zip(['Players',None,None],[self._leftColumn,\
                 self._centerColumn,self._rightColumn])
         self._redraw()
 

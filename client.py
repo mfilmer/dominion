@@ -12,8 +12,6 @@ import getpass      #used to get logged in username
 
 class GameClient(LineReceiver):
     def __init__(self,factory,display):
-        self.state = 'New'
-        self._hand = []
         self.display = display
         self.factory = factory
         self.name = self.factory.name
@@ -22,10 +20,36 @@ class GameClient(LineReceiver):
     def lineReceived(self,line):
         if line == 'name?':
             self.sendLine(self.factory.name)
-        if line == 'taken':
+        elif line == 'taken':
             raise Exception('name taken')
-        if line[0:11] == 'cmd: hand: ':
-            self.display.hand = eval(line[11:])
+        elif line == 'okay':
+            pass
+        elif line == 'starting':
+            self.display._columns = zip(['Hand','Field','Store'],\
+                    [self.display._leftColumn,self.display._centerColumn,\
+                    self.display._rightColumn])
+            self.display._leftColumn.setTitle('Hand')
+            self.display._centerColumn.setTitle('Field')
+            self.display._rightColumn.setTitle('Store')
+        elif line[0:6] == 'data: ':
+            if line[6:12] == 'hand: ':
+                self.display.hand = eval(line[12:])
+            elif line[6:13] == 'field: ':
+                self.display.field = eval(line[13:])
+            elif line[6:15] == 'discard: ':
+                self.display.discard = eval(line[15:])
+            elif line[6:14] == 'stores: ':
+                self.display.stores = eval(line[14:])
+            else:
+                raise Exception('Unknown Message: ' + line)
+        elif line[0:16] == 'existingPlayer: ':
+            self.display.addPlayer(line[16:])
+        elif line[0:11] == 'newPlayer: ':
+            self.display.addPlayer(line[11:])
+        elif line[0:12] == 'dropPlayer: ':
+            self.display.dropPlayer(line[12:])
+        else:
+            raise Exception('Unknown Message: ' + line)
 
     def connectionLost(self,reason):
         pass
@@ -50,6 +74,13 @@ class GameFactory(ClientFactory):
         return GameClient(self,self.display)
 
 class TwistedDisplay(Display):
+    def __init__(self,stdscr):
+        Display.__init__(self,stdscr)
+        self._playerList = []
+        self._hand = []
+        self._field = []
+        self._store = []
+        self._discard = []
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
         if char == 27:
@@ -84,6 +115,19 @@ class TwistedDisplay(Display):
     def setClient(self,client):
         self.client = client
 
+    def addPlayer(self,player):
+        if not player in self._playerList:
+            self._playerList.append(player)
+            for contents,column in self._columns:
+                if contents == 'Players':
+                    column.setRowData(self._playerList)
+    def dropPlayer(self,player):
+        if player in self._playerList:
+            del(self._playerList[self._playerList.index(player)])
+            for contents,column in self._columns:
+                if contents == 'Players':
+                    column.setRowData(self._playerList)
+
     @property
     def hand(self):
         return self._hand
@@ -93,6 +137,40 @@ class TwistedDisplay(Display):
         for contents,column in self._columns:
             if contents == 'Hand':
                 data = ['('+str(c)+') ' + n for n,c in self._hand.items()]
+                column.setRowData(data)
+
+    @property
+    def field(self):
+        return self._field
+    @field.setter
+    def field(self,value):
+        self._field = value
+        for contents,column in self._columns:
+            if contents == 'Field':
+                data = ['('+str(c)+') ' + n for n,c in self._field.items()]
+                column.setRowData(data)
+
+    @property
+    def discard(self):
+        return self._discard
+    @discard.setter
+    def discard(self,value):
+        self._discard = value
+        for contents,column in self._columns:
+            if contents == 'Discard':
+                data = ['('+str(c)+') '+n for n,c in self._discard.items()]
+                column.setRowData(data)
+
+    @property
+    def store(self):
+        return self._discard
+    @store.setter
+    def store(self,value):
+        self._store = value
+        for contents,column in self._columns:
+            if contents == 'Store':
+                data = ['('+str(count)+') $'+str(cost)+' '+name \
+                        for name,(cost,count) in self._store.items()]
                 column.setRowData(data)
 
     #twisted stuff that is necessary but not really helpful
