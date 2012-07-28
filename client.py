@@ -183,14 +183,7 @@ class TwistedDisplay(Display):
     def fileno(self):
         return 0
 
-def main(stdscr):
-    parser = argparse.ArgumentParser()
-    parser.add_argument('name',type=str,default=getpass.getuser())
-    parser.add_argument('-p','--port',default=6814,type=int)
-    parser.add_argument('-a','--address',type=str, \
-            default='mattfilmer.student.rit.edu') 
-    args = parser.parse_args()
-    
+def main(stdscr,args):
     display = TwistedDisplay(stdscr)
 
     factory = GameFactory(args.name,display)
@@ -200,4 +193,11 @@ def main(stdscr):
     reactor.run()
 
 if __name__ == '__main__':
-    curses.wrapper(main)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n','--name',type=str,default=getpass.getuser())
+    parser.add_argument('-p','--port',default=6814,type=int)
+    parser.add_argument('-a','--address',type=str, \
+            default='mattfilmer.student.rit.edu') 
+    args = parser.parse_args()
+
+    curses.wrapper(main,args)
