@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
@@ -17,14 +19,14 @@ class Player(LineReceiver):
         self.state = 'New'
 
     def connectionMade(self):
-        playerCount = len(self.users)
-        self.sendLine(str(playerCount))
-        for user in self.users:
-            self.sendLine(user)
+        self.sendLine('name?')
 
     def connectionLost(self,reason):
         if self.users.has_key(self.name):
             del self.users[self.name]
+            for name,protocol in self.users.iteritems():
+                protocol.sendLine('dropPlayer: ' + self.name)
+            print(self.name + ' has left')
 
     def registerNewPlayer(self,name):
         if self.users.has_key(name):
@@ -32,17 +34,24 @@ class Player(LineReceiver):
             print(name + ' already taken')
         else:
             self.name = name
+            self.sendLine('okay')
             print(name + ' has joined')
             self.state = 'InLobby'
             self.users[name] = self
             for name,protocol in self.users.iteritems():
-                self.sendLine('newplayer ' + name)
+                if protocol == self:
+                    playerCount = len(self.users)
+                    for name,protocol in self.users.iteritems():
+                        self.sendLine('existingplayer: ' + name)
+                else:
+                    protocol.sendLine('newplayer: ' + name)
             if len(self.users) == self.maxPlayers:
                 for name,protocol in self.users.iteritems():
-                    self.sendLine('starting')
+                    protocol.sendLine('starting')
                     protocol.state = 'Waiting'
-                    self.factory.game = Dominion.game(self.users.keys())
-                    self.factoryturn = self.factory.game.next()
+                print('Starting Game...')
+                self.factory.game = Dominion.game(self.users.keys())
+                self.factoryturn = self.factory.game.next()
 
     def lineReceived(self,line):
         if self.state == 'New': #they sent their name. tell everyone about it

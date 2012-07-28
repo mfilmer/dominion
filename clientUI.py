@@ -5,11 +5,13 @@ import curses.wrapper
 #import curses.textpad
 from time import sleep      #here for test purposes only. will be removed
 import string
+from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
     def __init__(self):
         self._window = curses.newwin(1,80,23,0)
         self._window.keypad(True)
+        self._window.nodelay(True)
         self._window.bkgd(' ',curses.color_pair(1))
         self._status = ''
         self.setStatus('test status')
@@ -154,6 +156,7 @@ class Display(object):
             curses.init_pair(2,9,15)    #marked (blue on white)
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
+        self._stdscr.nodelay(True)
         self._titleWin = curses.newwin(1,80,0,0)
         self._titleWin.bkgd(' ',curses.color_pair(1))
         self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
@@ -170,6 +173,9 @@ class Display(object):
         self._statusBar = StatusBar()
         self._currentCol = self._leftColumn
         self._currentCol._isActive = True
+        self._leftColumn.setRowData(map(str,range(50)))
+        self._centerColumn.setRowData(map(str,range(50)))
+        self._rightColumn.setRowData(map(str,range(50)))
         self._redraw()
 
     def _redraw(self):
@@ -178,6 +184,7 @@ class Display(object):
         self._leftColumn.redraw()
         self._centerColumn.redraw()
         self._rightColumn.redraw()
+        self._statusBar.refresh()
 
     def scroll(self,lines=1):
         self._currentCol.scroll(lines)
@@ -214,3 +221,4 @@ class Display(object):
 
     def getCh(self):
         return self._statusBar.getCh()
+
