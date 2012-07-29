@@ -18,7 +18,8 @@ class GameClient(LineReceiver):
         self.display.setClient(self)
         self.gameRunning = False
         self.myTurn = False
-        self.phase = 3
+        self.phase = 'Wait'
+        self.currentPlayer = ''
 
     def lineReceived(self,line):
         if line == 'name?':
@@ -39,7 +40,7 @@ class GameClient(LineReceiver):
         elif line == 'your turn':
             self.display.setStatus('My Turn')
             self.myTurn = True
-            self.phase = 0
+            self.phase = 'Action'
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
                 self.display.hand = eval(line[12:])
@@ -51,9 +52,15 @@ class GameClient(LineReceiver):
                 self.display.store = eval(line[13:])
             else:
                 self.unrecognizedServerRequest(line)
-        elif line [0:6] == 'turn: ':
+        elif line[0:6] == 'turn: ':
             self.display.setStatus(line[6:] + '\'s turn')
+            self.currentPlayer = line[6:]
             self.myTurn = False
+        elif line[0:7] == 'phase: ':
+            if self.myTurn:
+                self.phase = line[7:]
+            else:
+                self.setStatus(self.currentPlayer+' enters '+line[7:]+' phase')
         elif line[0:16] == 'existingPlayer: ':
             self.display.addPlayer(line[16:])
         elif line[0:11] == 'newPlayer: ':
@@ -122,6 +129,8 @@ class TwistedDisplay(Display):
             self.changeColSelect(-1)
         elif char == curses.KEY_RIGHT:
             self.changeColSelect(1)
+        elif char == ord('n'):
+            self.client.sendLine('advance phase')
         elif char == ord('q'):
             reactor.stop()
         elif char == ord(' '):
@@ -159,22 +168,21 @@ class TwistedDisplay(Display):
                 if column == self._currentCol:
                     break
             if client.myTurn:
-                if client.phase == 0:       #action phase
+                if client.phase == 'Action':
                     if function == 'Hand':
                         name = self.getSelectedCardName()
                         client.sendLine('play: ' + name)
                     else:
                         self.setStatus('Choose a card from your hand')
-                elif client.phase == 1:     #buy phase
+                elif client.phase == 'Buy':
                     if function == 'Store':
                         name = self.getSelectedCardName()
                         client.sendLine('buy: ' + name)
                     else:
                         self.setStatus('Choose a card from the store')
-                elif client.phase == 2:     #cleanup phase
+                elif client.phase == 'Cleanup':
                     pass
-                #wait phase (other player's turns)
-                elif client.phase == 3:     
+                elif client.phase == 'Wait':     
                     pass
             else:
                 self.setStatus('Wait until your turn')

@@ -6,6 +6,8 @@ from twisted.internet.protocol import Factory
 from twisted.protocols.basic import LineReceiver
 from twisted.internet import reactor
 
+from errors import *
+
 import argparse
 
 import Dominion
@@ -17,6 +19,7 @@ class Player(LineReceiver):
         self.factory = factory
         self.name = None
         self.phase = 'New'
+        self.player = None
 
     def connectionMade(self):
         self.sendLine('name?')
@@ -48,17 +51,89 @@ class Player(LineReceiver):
             if len(self.users) == self.maxPlayers:
                 self.factory.startGame()
 
+    def updatePiles(self,pile='All'):
+        if pile == 'All' or pile == 'Hand':
+            hand = self.player.getDeck().getHand()
+            dHand = {}
+            for card in hand:
+                cardName = card.getName()
+                dHand[cardName] = hand.countCardsByName(cardName)
+            hand = repr(dHand)
+            self.sendLine('data: hand: ' + hand)
+        if pile == 'All' or pile == 'Field':
+            pass
+        if pile == 'All' or pile == 'Discard':
+            pass
+        if pile == 'All' or pile == 'Store':
+            stores = self.factory.game.getStores()
+            dStores = {}
+            for store in stores:
+                try:
+                    dStores[store.getName()]=(store.getCost(),len(store))
+                except OverflowError:
+                    dStores[store.getName()]=(store.getCost(),u'\u221E')
+            stores = repr(dStores)
+            self.sendLine('data: store: ' + stores)
+
+    def advancePhase(self):
+        if self.phase == 'Action':
+            newPhase = 'Buy'
+        elif self.phase == 'Buy':
+            newPhase = 'Cleanup'
+        elif self.phase == 'Cleanup':
+            newPhase = 'Wait'
+        elif self.phase == 'Wait':
+            self.sendLine('error: you can\'t end your wait phase')
+            newPhase = 'Wait'
+        else:
+            print('tried to advance out of phase: ' + self.phase)
+            newPhase = self.phase
+        self.phase = newPhase
+        self.sendLine('phase: ' + newPhase)
+        print(self.name + ' is now in the ' + newPhase + ' phase')
+
     def lineReceived(self,line):
-        if self.phase == 'New': #they sent their name. tell everyone about it
+        if line == 'advance phase':
+            self.advancePhase()
+        elif self.phase == 'New': #they sent their name. tell everyone about it
             self.registerNewPlayer(line)
         elif self.phase == 'InLobby':
             #perhaps this is a chat message. implement later
             self.unrecognizedClientRequest(line) 
         elif self.phase == 'Action':
             if line[0:6] == 'play: ':
-                print(self.name+' has played: ' + line[6:])
+                hand = self.player.getDeck().getHand()
+                try:
+                    card = hand.getCardByName(line[6:])
+                except ValueError:  #card not in hand
+                    pass
+                extraData = []
+                for prompt in card.getPrompts():
+                    pass
+                try:
+                    self.factory.turn.play(card,extraData)
+                except InvalidPhase: #not the correct phase to play this card
+                    print('invalid phase')
+                except InsufficientActions: #not enough actions to play
+                    print('insufficient actions')
+                except MissingCards,e:
+                    print('missing cards')
+                else:
+                    print(card.getName() + ' played')
+                    self.updatePiles(self)
             else:
                 self.unrecognizedClientRequest(line)
+        elif self.phase == 'Buy':
+            if line[0:6] == 'play: ':
+                pass
+            elif line[0:5] == 'buy: ':
+                pass
+            else:
+                self.unrecognizedClientRequest(line)
+        elif self.phase == 'Cleanup':
+            pass
+        elif self.phase == 'Wait':
+            pass
         else:
             self.unrecognizedClientRequest(line)
 
@@ -109,7 +184,7 @@ class GameFactory(Factory):
                 protocol.phase = 'Action'
             else:
                 protocol.sendLine('turn: ' + currentPlayerName)
-                protocol.phase = 'Waiting'
+                protocol.phase = 'Wait'
 
 def main():
     parser = argparse.ArgumentParser()
