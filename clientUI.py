@@ -2,14 +2,14 @@
 
 import curses
 import curses.wrapper
-#import curses.textpad
+#import curses.textpad      #maybe use to get user supplied text input
 from time import sleep      #here for test purposes only. will be removed
 import string
 from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
     def __init__(self):
-        self._statusHistory = ['']
+        self._statusHistory = []
         self._window = curses.newwin(1,80,23,0)
         self._window.keypad(True)
         self._window.nodelay(True)
@@ -149,11 +149,10 @@ class Column(object):
 
     def toggleMark(self,row):
         if row in self._markedRows:
-            self._deselect(row)
             self._markedRows.remove(row)
         else:
-            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(2))
             self._markedRows.add(row)
+        self._deselect(row)
         self.redraw()
 
     def moveSelection(self,lines=1):

@@ -42,6 +42,7 @@ class Player(LineReceiver):
                 dStores[store.getName()]=(store.getCost(),u'\u221E')
         stores = repr(dStores)
         currentPlayerName = self.factory.turn.getPlayer().getName()
+        print('starting player: ' + currentPlayerName)
         for name,protocol in self.users.iteritems():
             protocol.sendLine('starting')
             protocol.state = 'Waiting'
@@ -58,7 +59,7 @@ class Player(LineReceiver):
             if name == currentPlayerName:
                 protocol.sendLine('your turn')
             else:
-                protocol.sendLine('turn: ' + name)
+                protocol.sendLine('turn: ' + currentPlayerName)
 
     def registerNewPlayer(self,name):
         if self.users.has_key(name):

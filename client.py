@@ -47,9 +47,7 @@ class GameClient(LineReceiver):
             elif line[6:13] == 'store: ':
                 self.display.store = eval(line[13:])
             else:
-                with open(self.name+'.log','w') as f:
-                    f.write('Unknown Message: ' + line)
-                raise Exception('Unknown Message: ' + line)
+                self.unrecognizedServerRequest(line)
         elif line [0:6] == 'turn: ':
             self.display.setStatus(line[6:] + '\'s turn')
             self.myTurn = False
@@ -59,15 +57,21 @@ class GameClient(LineReceiver):
             self.display.addPlayer(line[11:])
         elif line[0:12] == 'dropPlayer: ':
             if self.gameRunning:
-                self.display.setStatus('Player ' + line[12:] + ' has dropped')
+                self.display.setStatus(line[12:] + ' has dropped')
             self.display.dropPlayer(line[12:])
         else:
-            raise Exception('Unknown Message: ' + line)
+            self.unrecognizedServerRequest(line)
 
     def connectionLost(self,reason):
         pass
         #raise Exception('connection lost')
         reactor.stop()
+
+    def unrecognizedServerRequest(self,line):
+        self.display.setStatus('Unrecognized Server Request: \''+line+'\'')
+        with open(self.name+'.log','a') as f:
+            f.write('Unknown Message: ' + line)
+        #raise Exception('Unknown Message: ' + line)
 
     @property
     def hand(self):
@@ -94,6 +98,7 @@ class TwistedDisplay(Display):
         self._field = []
         self._store = []
         self._discard = []
+
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
         if char == 27:
@@ -102,16 +107,12 @@ class TwistedDisplay(Display):
             reactor.stop()
         elif char == curses.KEY_NPAGE:
             self.scroll(1)
-            self._statusBar.setStatus('page down')
         elif char == curses.KEY_PPAGE:
             self.scroll(-1)
-            self._statusBar.setStatus('page up')
         elif char == curses.KEY_UP:
             self.moveSelection(-1)
-            self._statusBar.setStatus('up')
         elif char == curses.KEY_DOWN:
             self.moveSelection(1)
-            self._statusBar.setStatus('down')
         elif char == curses.KEY_LEFT:
             self.changeColSelect(-1)
         elif char == curses.KEY_RIGHT:
@@ -120,8 +121,9 @@ class TwistedDisplay(Display):
             reactor.stop()
         elif char == ord(' '):
             self.toggleMark()
-        elif char == curses.KEY_ENTER:
-            raise Exception
+        #elif char == curses.KEY_ENTER: #for some reason this doesnt work
+        elif char == ord('\n'):
+            self.submit()
         elif char == ord('\t'):
             #will eventually switch between different player's screens
             pass
@@ -136,6 +138,24 @@ class TwistedDisplay(Display):
             #pass
         #else:
             #raise Exception(char)
+
+    def submit(self):       #handle the enter button press event
+        client = self.client
+        if client.gameRunning == True:
+            #get selected column and its function
+            for func,col in self._columns:
+                if col == self._currentCol:
+                    function = func
+                    column = col
+                    break
+            if client.myTurn:
+                if function == 'Hand':
+                    self.setStatus('Hand selection submitted (not implemented)')
+                if function == 'Store':
+                    self.setStatus('Store selection submitted (not ' +\
+                            'implemented)')
+            else:
+                self.setStatus('Wait until your turn')
 
     def setClient(self,client):
         self.client = client
