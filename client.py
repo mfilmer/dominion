@@ -35,10 +35,11 @@ class GameClient(LineReceiver):
             self.display._centerColumn.setTitle('Field')
             self.display._rightColumn.setTitle('Store')
             self.gameRunning = True
+            self.display.setTitle('Dominion')
         elif line == 'your turn':
             self.display.setStatus('My Turn')
             self.myTurn = True
-            self.phase = 1
+            self.phase = 0
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
                 self.display.hand = eval(line[12:])
@@ -57,9 +58,9 @@ class GameClient(LineReceiver):
             self.display.addPlayer(line[16:])
         elif line[0:11] == 'newPlayer: ':
             self.display.addPlayer(line[11:])
+            self.display.setStatus(line[11:] + ' has joined')
         elif line[0:12] == 'dropPlayer: ':
-            if self.gameRunning:
-                self.display.setStatus(line[12:] + ' has dropped')
+            self.display.setStatus(line[12:] + ' has dropped')
             self.display.dropPlayer(line[12:])
         elif line[0:6] == 'what: ':
             self.display.setStatus('Server didn\'t recognize: ' + line[6:])
@@ -102,6 +103,7 @@ class TwistedDisplay(Display):
         self._field = []
         self._store = []
         self._discard = []
+        self.setTitle('Dominion - In Lobby')
 
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
@@ -137,6 +139,13 @@ class TwistedDisplay(Display):
             self.client.display.statusHistory(-1)
         elif char == 336:   #shift down
             self.client.display.statusHistory(1)
+
+        #perhaps implement these two to allow horizontal scrolling in the status
+        #bar area
+        #elif char == SHIFT RIGHT:
+            #pass
+        #elif char == SHIFT LEFT:
+            #pass
         #elif char == -1:
             #pass
         #else:
@@ -146,27 +155,41 @@ class TwistedDisplay(Display):
         client = self.client
         if client.gameRunning == True:
             #get selected column and its function
-            for func,col in self._columns:
-                if col == self._currentCol:
-                    function = func
-                    column = col
+            for function,column in self._columns:
+                if column == self._currentCol:
                     break
             if client.myTurn:
                 if client.phase == 0:       #action phase
-                    pass
+                    if function == 'Hand':
+                        name = self.getSelectedCardName()
+                        client.sendLine('play: ' + name)
+                    else:
+                        self.setStatus('Choose a card from your hand')
                 elif client.phase == 1:     #buy phase
-                    pass
+                    if function == 'Store':
+                        name = self.getSelectedCardName()
+                        client.sendLine('buy: ' + name)
+                    else:
+                        self.setStatus('Choose a card from the store')
                 elif client.phase == 2:     #cleanup phase
                     pass
-                elif client.phase == 3:     #wait phase (other player's turns)
+                #wait phase (other player's turns)
+                elif client.phase == 3:     
                     pass
-                if function == 'Hand':
-                    self.setStatus('Hand selection submitted (not implemented)')
-                if function == 'Store':
-                    self.setStatus('Store selection submitted (not ' +\
-                            'implemented)')
             else:
                 self.setStatus('Wait until your turn')
+
+    def getSelectedCardName(self):
+        for func,col in self._columns:
+            if col == self._currentCol:
+                break
+        if func == 'Hand' or func == 'Field':
+            return self._currentCol.getSelectedText().split()[1]
+        elif func == 'Store':
+            return self._currentCol.getSelectedText().split()[2]
+        else:
+            self.setStatus('You tried to select a card from a column with an '+\
+                    'unrecognized function')
 
     def setClient(self,client):
         self.client = client

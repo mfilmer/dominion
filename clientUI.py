@@ -21,14 +21,10 @@ class StatusBar(object):
         self._window.erase()
         if self._index == -1:
             self._printStatus(self._statusHistory[-1])
-            #self._window.addstr(0,0,self._statusHistory[-1],\
-                    #curses.color_pair(1))
         else:
             self._printStatus(str(-self._index-1)+': ' + \
                     self._statusHistory[self._index])
             self._index -= 1
-            #self._window.addstr(0,0,str(-self._index-1)+': '+\
-                    #self._statusHistory[self._index],curses.color_pair(1))
 
     def getCh(self):
         return self._window.getch()
@@ -45,13 +41,9 @@ class StatusBar(object):
         self._window.erase()
         if self._index == -1:
             self._printStatus(self._statusHistory[-1])
-            #self._window.addstr(0,0,self._statusHistory[-1],\
-                    #curses.color_pair(1))
         else:
             self._printStatus(str(-self._index-1)+': ' + \
                     self._statusHistory[self._index])
-            #self._window.addstr(0,0,str(-self._index-1)+': '+\
-                    #self._statusHistory[self._index],curses.color_pair(1))
 
     def _printStatus(self,status):
         if len(status) > 79:
@@ -138,6 +130,13 @@ class Column(object):
         else:
             self._scrollOffset += lines
         self.redraw()
+
+    def getSelectedText(self):
+        return self._rowData[self._selectedRow]
+
+    def getMarkedText(self):
+        return [self._rowData[i] for i in range(len(self._rowData)) if i in \
+                self._markedRows]
 
     def _deselect(self,row):
         if row in self._markedRows:
@@ -266,6 +265,11 @@ class Display(object):
                     self._leftColumn.redraw()
         self._currentCol._isActive = True
         self._currentCol.redraw()
+
+    def setTitle(self,title):
+        self._titleWin.erase()
+        self._titleWin.addstr(0,0,title,curses.color_pair(1) | curses.A_BOLD)
+        self._titleWin.refresh()
 
     def toggleMark(self):
         self._currentCol.toggleMark(self._currentCol._selectedRow)

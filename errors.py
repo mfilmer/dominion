@@ -1,3 +1,6 @@
+#exceptions from curses ui
+
+#exceptions from base game or cli UI
 class EmptyPile(Exception):
     pass
 
