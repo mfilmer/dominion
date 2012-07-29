@@ -90,6 +90,7 @@ class Player(LineReceiver):
         else:       #sould not have received this line
             print('received bad line from ' + self.name + ': ')
             print(line)
+            self.sendLine('what: ' + line)
 
 class GameFactory(Factory):
     def __init__(self,maxPlayers = 2):

@@ -20,13 +20,15 @@ class StatusBar(object):
         self._statusHistory.append(newStatus)
         self._window.erase()
         if self._index == -1:
-            self._window.addstr(0,0,self._statusHistory[-1],\
-                    curses.color_pair(1))
+            self._printStatus(self._statusHistory[-1])
+            #self._window.addstr(0,0,self._statusHistory[-1],\
+                    #curses.color_pair(1))
         else:
+            self._printStatus(str(-self._index-1)+': ' + \
+                    self._statusHistory[self._index])
             self._index -= 1
-            self._window.addstr(0,0,str(-self._index-1)+': '+\
-                    self._statusHistory[self._index],curses.color_pair(1))
-        self.refresh()
+            #self._window.addstr(0,0,str(-self._index-1)+': '+\
+                    #self._statusHistory[self._index],curses.color_pair(1))
 
     def getCh(self):
         return self._window.getch()
@@ -42,11 +44,20 @@ class StatusBar(object):
             self._index = -len(self._statusHistory)
         self._window.erase()
         if self._index == -1:
-            self._window.addstr(0,0,self._statusHistory[-1],\
-                    curses.color_pair(1))
+            self._printStatus(self._statusHistory[-1])
+            #self._window.addstr(0,0,self._statusHistory[-1],\
+                    #curses.color_pair(1))
         else:
-            self._window.addstr(0,0,str(-self._index-1)+': '+\
-                    self._statusHistory[self._index],curses.color_pair(1))
+            self._printStatus(str(-self._index-1)+': ' + \
+                    self._statusHistory[self._index])
+            #self._window.addstr(0,0,str(-self._index-1)+': '+\
+                    #self._statusHistory[self._index],curses.color_pair(1))
+
+    def _printStatus(self,status):
+        if len(status) > 79:
+            self._window.addstr(0,0,status[0:76]+'...',curses.color_pair(1))
+        else:
+            self._window.addstr(0,0,status,curses.color_pair(1))
         self.refresh()
 
 class Column(object):

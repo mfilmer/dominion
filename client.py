@@ -18,6 +18,7 @@ class GameClient(LineReceiver):
         self.display.setClient(self)
         self.gameRunning = False
         self.myTurn = False
+        self.phase = 3
 
     def lineReceived(self,line):
         if line == 'name?':
@@ -37,6 +38,7 @@ class GameClient(LineReceiver):
         elif line == 'your turn':
             self.display.setStatus('My Turn')
             self.myTurn = True
+            self.phase = 1
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
                 self.display.hand = eval(line[12:])
@@ -59,16 +61,18 @@ class GameClient(LineReceiver):
             if self.gameRunning:
                 self.display.setStatus(line[12:] + ' has dropped')
             self.display.dropPlayer(line[12:])
+        elif line[0:6] == 'what: ':
+            self.display.setStatus('Server didn\'t recognize: ' + line[6:])
         else:
             self.unrecognizedServerRequest(line)
 
     def connectionLost(self,reason):
         pass
         #raise Exception('connection lost')
-        reactor.stop()
+        #reactor.stop()
 
     def unrecognizedServerRequest(self,line):
-        self.display.setStatus('Unrecognized Server Request: \''+line+'\'')
+        self.display.setStatus('Unrecognized Server Request: '+line)
         with open(self.name+'.log','a') as f:
             f.write('Unknown Message: ' + line)
         #raise Exception('Unknown Message: ' + line)
@@ -101,10 +105,9 @@ class TwistedDisplay(Display):
 
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
-        if char == 27:
-            self._statusBar.setStatus('exiting')
-            sleep(.5)
-            reactor.stop()
+        if char == 27:          #ESC key
+            #will eventually clear selection
+            pass
         elif char == curses.KEY_NPAGE:
             self.scroll(1)
         elif char == curses.KEY_PPAGE:
@@ -149,6 +152,14 @@ class TwistedDisplay(Display):
                     column = col
                     break
             if client.myTurn:
+                if client.phase == 0:       #action phase
+                    pass
+                elif client.phase == 1:     #buy phase
+                    pass
+                elif client.phase == 2:     #cleanup phase
+                    pass
+                elif client.phase == 3:     #wait phase (other player's turns)
+                    pass
                 if function == 'Hand':
                     self.setStatus('Hand selection submitted (not implemented)')
                 if function == 'Store':
