@@ -162,18 +162,17 @@ class UI(object):
             name = varList['name1'] + ' ' + varList['name2']
         try:
             card = self._hand.getCardByName(name)
-        except:
+        except ValueError:
             print('Card is not in hand')
         else:
+            extraData = []
+            extraPrompts = card.getPrompts()
+            for prompt in extraPrompts:
+                extraData.append(raw_input(prompt + ': '))
             try:
-                extraData = []
-                extraPrompts = card.getPrompts()
-                for prompt in extraPrompts:
-                    extraData.append(raw_input(prompt + ': '))
-                try:
-                    self._turn.play(card,extraData)
-                except ValueError:
-                    print('Card could not be played')
+                self._turn.play(card,extraData)
+            except ValueError:
+                print('Card could not be played')
             except InvalidPhase:
                 print('This card cannot be played in this phase')
             except InsufficientActions:
