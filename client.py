@@ -178,8 +178,11 @@ class TwistedDisplay(Display):
                     if function == 'Store':
                         name = self.getSelectedCardName()
                         client.sendLine('buy: ' + name)
+                    elif function == 'Hand':
+                        name = self.getSelectedCardName()
+                        client.sendLine('play: ' + name)
                     else:
-                        self.setStatus('Choose a card from the store')
+                        self.setStatus('Invalid choice')
                 elif client.phase == 'Cleanup':
                     pass
                 elif client.phase == 'Wait':     

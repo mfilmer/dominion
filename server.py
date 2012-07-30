@@ -92,6 +92,29 @@ class Player(LineReceiver):
         self.sendLine('phase: ' + newPhase)
         print(self.name + ' is now in the ' + newPhase + ' phase')
 
+    def playCard(self,cardName):
+        hand = self.player.getDeck().getHand()
+        try:
+            card = hand.getCardByName(cardName)
+        except ValueError:  #card not in hand
+            pass
+        extraData = []
+        for prompt in card.getPrompts():
+            pass
+        print('trying to play card: ' + cardName)
+        try:
+            self.factory.turn.play(card,extraData)
+        except InvalidPhase: #not the correct phase to play this card
+            print('invalid phase')
+        except InsufficientActions: #not enough actions to play
+            print('insufficient actions')
+        except MissingCards,e:
+            print('missing cards')
+        else:
+            print(card.getName() + ' played')
+            self.updatePiles(self)
+        pass
+
     def lineReceived(self,line):
         if line == 'advance phase':
             self.advancePhase()
@@ -102,30 +125,12 @@ class Player(LineReceiver):
             self.unrecognizedClientRequest(line) 
         elif self.phase == 'Action':
             if line[0:6] == 'play: ':
-                hand = self.player.getDeck().getHand()
-                try:
-                    card = hand.getCardByName(line[6:])
-                except ValueError:  #card not in hand
-                    pass
-                extraData = []
-                for prompt in card.getPrompts():
-                    pass
-                try:
-                    self.factory.turn.play(card,extraData)
-                except InvalidPhase: #not the correct phase to play this card
-                    print('invalid phase')
-                except InsufficientActions: #not enough actions to play
-                    print('insufficient actions')
-                except MissingCards,e:
-                    print('missing cards')
-                else:
-                    print(card.getName() + ' played')
-                    self.updatePiles(self)
+                self.playCard(line[6:])
             else:
                 self.unrecognizedClientRequest(line)
         elif self.phase == 'Buy':
             if line[0:6] == 'play: ':
-                pass
+                self.playCard(line[6:])
             elif line[0:5] == 'buy: ':
                 pass
             else:
