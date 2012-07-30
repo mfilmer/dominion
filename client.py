@@ -59,8 +59,10 @@ class GameClient(LineReceiver):
         elif line[0:7] == 'phase: ':
             if self.myTurn:
                 self.phase = line[7:]
+                self.display.setStatus(self.phase + ' phase')
             else:
-                self.setStatus(self.currentPlayer+' enters '+line[7:]+' phase')
+                self.display.setStatus(self.currentPlayer+' enters '+line[7:]+\
+                        ' phase')
         elif line[0:16] == 'existingPlayer: ':
             self.display.addPlayer(line[16:])
         elif line[0:11] == 'newPlayer: ':
@@ -166,7 +168,7 @@ class TwistedDisplay(Display):
             #get selected column and its function
             for function,column in self._columns:
                 if column == self._currentCol:
-                    break
+                    break       #yeah, this actually does something
             if client.myTurn:
                 if client.phase == 'Action':
                     if function == 'Hand':

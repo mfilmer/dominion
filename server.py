@@ -76,31 +76,25 @@ class Player(LineReceiver):
             self.sendLine('data: store: ' + stores)
 
     def advancePhase(self):
-        try:
+        if self.phase != 'Wait':
             self.factory.turn.advancePhase()
-        except PhaseError:
-            self.factory.turn = self.factory.game.next()
-        else:
             turn = self.factory.turn
-            if turn.isPhase('Action'):
-                newPhase = 'Action'
-            elif turn.isPhase('Buy'):
+            newTurn = False
+            if turn.isPhase('Buy'):
                 newPhase = 'Buy'
-            elif turn.isPhase('Cleanup'):
-                newPhase = 'Cleanup'
             elif turn.isPhase('Wait'):
                 newPhase = 'Wait'
-                self.sendLine('phase: Wait')
-                self.advancePhase()
-            else:
-                print('Apparently we aren\'t in any phase right now')
-            if newPhase == 'Action':
+                newTurn = True
+            self.phase = newPhase
+            for name,protocol in self.users.iteritems():
+                protocol.sendLine('phase: ' + newPhase)
+            self.sendHand()
+            print(self.name + ' is now in the ' + newPhase + ' phase')
+            if newTurn:
                 self.newTurn()
-            elif newPhase != 'Wait':
-                self.phase = newPhase
-                self.sendLine('phase: ' + newPhase)
-                self.sendHand()
-                print(self.name + ' is now in the ' + newPhase + ' phase')
+
+    def buyCard(self,cardName):
+        pass
 
     def playCard(self,cardName):
         hand = self.player.getDeck().getHand()
@@ -142,7 +136,7 @@ class Player(LineReceiver):
             if line[0:6] == 'play: ':
                 self.playCard(line[6:])
             elif line[0:5] == 'buy: ':
-                pass
+                self.buyCard(line[5:])
             else:
                 self.unrecognizedClientRequest(line)
         elif self.phase == 'Cleanup':
@@ -168,9 +162,10 @@ class Player(LineReceiver):
         self.sendLine('data: hand: ' + hand)
 
     def newTurn(self):
+        self.factory.turn = self.factory.game.next()
         currentPlayer = self.factory.turn.getPlayer().getName()
         for name,protocol in self.factory.users.iteritems():
-            self.sendHand(protocol)
+            protocol.sendHand()
             if name == currentPlayer:
                 protocol.sendLine('your turn')
                 protocol.phase = 'Action'
@@ -205,14 +200,6 @@ class GameFactory(Factory):
         for name,protocol in self.users.iteritems():
             protocol.sendLine('starting')
             protocol.player = [p for p in players if p.getName() == name][0]
-            #hand = protocol.player.getDeck().getHand()
-            #dHand = {}
-            #for card in hand:
-                #cardName = card.getName()
-                #dHand[cardName] = hand.countCardsByName(cardName)
-            #hand = repr(dHand)
-            #protocol.sendLine('data: hand: ' + hand)
-            #print(protocol.name + '\'s starting hand: ' + hand)
             protocol.sendHand()
             protocol.sendLine('data: store: ' + stores)
             if name == currentPlayerName:
