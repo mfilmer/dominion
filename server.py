@@ -76,28 +76,38 @@ class Player(LineReceiver):
             self.sendLine('data: store: ' + stores)
 
     def advancePhase(self):
-        if self.phase == 'Action':
-            newPhase = 'Buy'
-        elif self.phase == 'Buy':
-            newPhase = 'Cleanup'
-        elif self.phase == 'Cleanup':
-            newPhase = 'Wait'
-        elif self.phase == 'Wait':
-            self.sendLine('error: you can\'t end your wait phase')
-            newPhase = 'Wait'
+        try:
+            self.factory.turn.advancePhase()
+        except PhaseError:
+            self.factory.turn = self.factory.game.next()
         else:
-            print('tried to advance out of phase: ' + self.phase)
-            newPhase = self.phase
-        self.phase = newPhase
-        self.sendLine('phase: ' + newPhase)
-        print(self.name + ' is now in the ' + newPhase + ' phase')
+            turn = self.factory.turn
+            if turn.isPhase('Action'):
+                newPhase = 'Action'
+            elif turn.isPhase('Buy'):
+                newPhase = 'Buy'
+            elif turn.isPhase('Cleanup'):
+                newPhase = 'Cleanup'
+            elif turn.isPhase('Wait'):
+                newPhase = 'Wait'
+                self.sendLine('phase: Wait')
+                self.advancePhase()
+            else:
+                print('Apparently we aren\'t in any phase right now')
+            if newPhase == 'Action':
+                self.newTurn()
+            elif newPhase != 'Wait':
+                self.phase = newPhase
+                self.sendLine('phase: ' + newPhase)
+                self.sendHand()
+                print(self.name + ' is now in the ' + newPhase + ' phase')
 
     def playCard(self,cardName):
         hand = self.player.getDeck().getHand()
         try:
             card = hand.getCardByName(cardName)
         except ValueError:  #card not in hand
-            pass
+            print('card \'' + cardName + '\' not in hand')
         extraData = []
         for prompt in card.getPrompts():
             pass
@@ -147,6 +157,26 @@ class Player(LineReceiver):
         print(line)
         self.sendLine('what: ' + line)
 
+    def sendHand(self):
+        playerName = self.name
+        hand = self.player.getDeck().getHand()
+        dHand = {}
+        for card in hand:
+            cardName = card.getName()
+            dHand[cardName] = hand.countCardsByName(cardName)
+        hand = repr(dHand)
+        self.sendLine('data: hand: ' + hand)
+
+    def newTurn(self):
+        currentPlayer = self.factory.turn.getPlayer().getName()
+        for name,protocol in self.factory.users.iteritems():
+            self.sendHand(protocol)
+            if name == currentPlayer:
+                protocol.sendLine('your turn')
+                protocol.phase = 'Action'
+            else:
+                protocol.sendLine('turn: ' + name)
+
 class GameFactory(Factory):
     def __init__(self,maxPlayers = 2):
         self.users = {}
@@ -175,14 +205,15 @@ class GameFactory(Factory):
         for name,protocol in self.users.iteritems():
             protocol.sendLine('starting')
             protocol.player = [p for p in players if p.getName() == name][0]
-            hand = protocol.player.getDeck().getHand()
-            dHand = {}
-            for card in hand:
-                cardName = card.getName()
-                dHand[cardName] = hand.countCardsByName(cardName)
-            hand = repr(dHand)
-            protocol.sendLine('data: hand: ' + hand)
-            print(protocol.name + '\'s starting hand: ' + hand)
+            #hand = protocol.player.getDeck().getHand()
+            #dHand = {}
+            #for card in hand:
+                #cardName = card.getName()
+                #dHand[cardName] = hand.countCardsByName(cardName)
+            #hand = repr(dHand)
+            #protocol.sendLine('data: hand: ' + hand)
+            #print(protocol.name + '\'s starting hand: ' + hand)
+            protocol.sendHand()
             protocol.sendLine('data: store: ' + stores)
             if name == currentPlayerName:
                 protocol.sendLine('your turn')
