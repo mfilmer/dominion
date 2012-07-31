@@ -1,11 +1,67 @@
 #!/usr/bin/env python
 
 import curses
-import curses.wrapper
 #import curses.textpad      #maybe use to get user supplied text input
 from time import sleep      #here for test purposes only. will be removed
 import string
 from twisted.internet.protocol import Protocol
+
+class StatusBar(object):
+    def __init__(self,(row=0,col=0),len=80):
+        self._statusHistory = []
+        self._window = curses.newwin(1,len,row,col)
+        self._length = len
+        self.keypad(True)
+        self.nodelay(True)
+        self.bkgd(' ',curses.color_pair(1))
+        self._index = 0 #history index, 0 == current message
+        self._horizOffset = 0   #as far left as possible
+
+    def getCh(self):
+        return self._window.getch()
+
+    def setStatus(self,status):
+        self._statusHistory.append(newStatus)
+        self.erase()
+        self._horizOffset = 0
+        if self._index == 0:
+            self._printStatus(self._statusHistory[-1])
+        else:
+            self._printStatus(str(-self._index-2)+': ' + \
+                    self._statusHistory[self._index])
+            self._index -= 1
+
+    #history/scrolling functions
+    def scrollHistory(self,step):
+        pass
+
+    def scrollCurrent(self,step):
+        """Scroll the current message horizontally. The step parameter indicates
+        how many characters to the right to view (negative values view left)."""
+        pass
+
+    #Implementation Functions
+    def _printStatus(self):
+        """Physically write the status as it should be displayed (including
+        any offsets for scrolling. This also refreshes the curses window"""
+        pass
+
+    #curses window functions
+    def bkgd(self,character,attrs):
+        self._window.bkgd(character,attrs)
+
+    def nodelay(self,value):
+        self._window.nodelay(value)
+
+    def keypad(self,value):
+        self._window.keypad(value)
+
+    def erase(self):
+        self._window.erase()
+
+    #other functions
+    def __len__(self):
+        return self._length
 
 class StatusBar(object):
     def __init__(self):
