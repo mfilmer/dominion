@@ -51,8 +51,8 @@ class Player(LineReceiver):
             if len(self.users) == self.maxPlayers:
                 self.factory.startGame()
 
-    def updatePiles(self,pile='All'):
-        if pile == 'All' or pile == 'Hand':
+    def updatePiles(self,piles=['Hand','Field','Discard','Store']):
+        if 'Hand' in piles:
             hand = self.player.getDeck().getHand()
             dHand = {}
             for card in hand:
@@ -60,11 +60,23 @@ class Player(LineReceiver):
                 dHand[cardName] = hand.countCardsByName(cardName)
             hand = repr(dHand)
             self.sendLine('data: hand: ' + hand)
-        if pile == 'All' or pile == 'Field':
-            pass
-        if pile == 'All' or pile == 'Discard':
-            pass
-        if pile == 'All' or pile == 'Store':
+        if 'Field' in piles:
+            field = self.player.getDeck().getField()
+            dField = {}
+            for card in field:
+                cardName = card.getName()
+                dField[cardName] = field.countCardsByName(cardName)
+            field = repr(dField)
+            self.sendLine('data: field: ' + field)
+        if 'Discard' in piles:
+            discard = self.player.getDeck().getDiscard()
+            dDiscard = {}
+            for card in discard:
+                cardName = card.getName()
+                dDiscard[cardName] = discard.countCardsByName(cardName)
+            discard = repr(dDiscard)
+            self.sendLine('data: discard: ' + discard)
+        if 'Store' in piles:
             stores = self.factory.game.getStores()
             dStores = {}
             for store in stores:
@@ -88,13 +100,21 @@ class Player(LineReceiver):
             self.phase = newPhase
             for name,protocol in self.users.iteritems():
                 protocol.sendLine('phase: ' + newPhase)
-            self.sendHand()
+            self.updatePiles(['Hand'])
             print(self.name + ' is now in the ' + newPhase + ' phase')
             if newTurn:
                 self.newTurn()
 
-    def buyCard(self,cardName):
-        pass
+    def buyCard(self,cardName): #todo: buy from the turn not the store
+        try:
+            store = self.factory.game.getStoreByName(cardName)
+        except ValueError:
+            pass    #todo: send some kind of error message
+        else:
+            store.buy(self.player)
+            self.updatePiles(['Discard'])
+            for name,protocol in self.users.iteritems():
+                protocol.updatePiles(['Store'])
 
     def playCard(self,cardName):
         hand = self.player.getDeck().getHand()
@@ -116,7 +136,7 @@ class Player(LineReceiver):
             print('missing cards')
         else:
             print(card.getName() + ' played')
-            self.updatePiles(self)
+            self.updatePiles(['Hand','Field'])
         pass
 
     def lineReceived(self,line):
@@ -151,21 +171,11 @@ class Player(LineReceiver):
         print(line)
         self.sendLine('what: ' + line)
 
-    def sendHand(self):
-        playerName = self.name
-        hand = self.player.getDeck().getHand()
-        dHand = {}
-        for card in hand:
-            cardName = card.getName()
-            dHand[cardName] = hand.countCardsByName(cardName)
-        hand = repr(dHand)
-        self.sendLine('data: hand: ' + hand)
-
     def newTurn(self):
         self.factory.turn = self.factory.game.next()
         currentPlayer = self.factory.turn.getPlayer().getName()
         for name,protocol in self.factory.users.iteritems():
-            protocol.sendHand()
+            protocol.updatePiles(['Hand'])
             if name == currentPlayer:
                 protocol.sendLine('your turn')
                 protocol.phase = 'Action'
@@ -200,7 +210,7 @@ class GameFactory(Factory):
         for name,protocol in self.users.iteritems():
             protocol.sendLine('starting')
             protocol.player = [p for p in players if p.getName() == name][0]
-            protocol.sendHand()
+            protocol.updatePiles(['Hand'])
             protocol.sendLine('data: store: ' + stores)
             if name == currentPlayerName:
                 protocol.sendLine('your turn')

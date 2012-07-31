@@ -98,6 +98,8 @@ class Column(object):
         self._titleWindow.refresh()
 
     def _newPad(self,rows):
+        if rows == 0:
+            rows = 1
         self._pad = curses.newpad(rows,self._cols)
         self._pad.bkgd(' ',curses.color_pair(1))
         self._numLines = rows
