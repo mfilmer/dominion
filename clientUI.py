@@ -1,186 +1,299 @@
 #!/usr/bin/env python
 
 import curses
-import curses.wrapper
 #import curses.textpad      #maybe use to get user supplied text input
 from time import sleep      #here for test purposes only. will be removed
 import string
 from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
-    def __init__(self):
+    def __init__(self,(row,col)=(0,0),length=80):
         self._statusHistory = []
-        self._window = curses.newwin(1,80,23,0)
-        self._window.keypad(True)
-        self._window.nodelay(True)
-        self._window.bkgd(' ',curses.color_pair(1))
-        self._index = -1
-
-    def setStatus(self,newStatus):
-        self._statusHistory.append(newStatus)
-        self._window.erase()
-        if self._index == -1:
-            self._printStatus(self._statusHistory[-1])
-        else:
-            self._printStatus(str(-self._index-1)+': ' + \
-                    self._statusHistory[self._index])
-            self._index -= 1
+        self._length = length
+        self._row = row
+        self._col = col
+        self._window = curses.newwin(1,length,row,col)
+        self.keypad(True)
+        self.nodelay(True)
+        self.bkgd(' ',curses.color_pair(1))
+        self._index = 0         #history index, 0 == current message
+        self._horizOffset = 0   #0 is as far left as possible
 
     def getCh(self):
+        """Get a character that was typed, or -1 if no character was typed"""
         return self._window.getch()
 
+    def setStatus(self,status,attrs=None):
+        if attrs is None:
+            attrs = curses.color_pair(1)
+        self._statusHistory.append((status,attrs))
+        self.erase()
+        if self._index == 0:
+            self._horizOffset = 0
+            prefix = ''
+        else:
+            self._index += 1
+            prefix = str(self._index) + ': '
+        self._displayText(*self._statusHistory[-1],prefix=prefix)
+
+    def setTempStatus(self,status,attrs=None):
+        if attrs is None:
+            attrs = curses.color_pair(1)
+        self.erase()
+        self._displayText(status,attrs)
+
+    #history/scrolling functions
+    def scrollHistory(self,step):
+        self._index += step
+        self._horizOffset = 0
+        if self._index < 0:
+            self._index = 0
+        elif self._index > len(self._statusHistory)-1:
+            self._index = len(self._statusHistory)-1
+        self.erase()
+        if len(self) > 0:
+            if self._index == 0:
+                prefix = ''
+            else:
+                prefix = str(self._index) + ': '
+            self._displayText(*self._statusHistory[-self._index-1], \
+                    prefix=prefix)
+
+    #todo: finish
+    def scrollCurrent(self,step):
+        """Scroll the current message horizontally. The step parameter indicates
+        how many characters to the right to view (negative values view left)."""
+        self._horizOffset += step
+        if self._horizOffset < 0:
+            self._horizOffset = 0
+
+    #Implementation Functions
+    #todo: finish
+    def _displayText(self,text,attrs,prefix=''):
+        """Physically write the status as it should be displayed (including
+        any offsets for scrolling. This also refreshes the curses window"""
+        #i'm not really sure whats with the self._length-1, but its necessary
+        text = prefix + text
+        if len(text) >= self._length:
+            text = text[0:self._length-4] + '...'
+        self._window.addstr(0,0,text,attrs)
+        self.refresh()
+
+    #curses window functions
     def refresh(self):
         self._window.refresh()
 
-    def scrollHistory(self,step):
-        self._index += step
-        if self._index > -1:
-            self._index = -1
-        elif self._index < -len(self._statusHistory):
-            self._index = -len(self._statusHistory)
-        self._window.erase()
-        if self._index == -1:
-            self._printStatus(self._statusHistory[-1])
-        else:
-            self._printStatus(str(-self._index-1)+': ' + \
-                    self._statusHistory[self._index])
+    def bkgd(self,character,attrs):
+        self._window.bkgd(character,attrs)
 
-    def _printStatus(self,status):
-        if len(status) > 79:
-            self._window.addstr(0,0,status[0:76]+'...',curses.color_pair(1))
-        else:
-            self._window.addstr(0,0,status,curses.color_pair(1))
-        self.refresh()
+    def nodelay(self,value):
+        self._window.nodelay(value)
+
+    def keypad(self,value):
+        self._window.keypad(value)
+
+    def erase(self):
+        self._window.erase()
+
+    #other functions
+    def __len__(self):
+        return len(self._statusHistory)
+
+    def __getitem__(self,value):
+        return self._statusHistory[-self._index-1][0]
+
+    def __setitem__(self,value):
+        self._statusHistory[-self._index-1] = value
 
 class Column(object):
-    def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
+    def __init__(self,(row,col)=(0,0),title='',width=26,height=20):
+        #row data
         self._rowData = []
-        self._numRows = 0
-        self._markedRows = set()
+        self._isActive = False
+
+        #physical dimensions and location
+        self._height = height
+        self._visibleRows = height-2
+        self._width = width
+        self._row = row
+        self._col = col
+
+        #scrolling and item selection
         self._scrollOffset = 0
         self._selectedRow = 0
-        self.__isActive = False
-        self._cols = cols
-        self._x = x
-        self._y = y
-        self._height = 18
-        self._titleWindow = curses.newwin(2,cols,y,x)
-        self._titleWindow.bkgd(' ',curses.color_pair(1))
-        self.setTitle(title[:])
-        self._newPad(5)
-
-    @property
-    def _isActive(self):
-        return self.__isActive
-    @_isActive.setter
-    def _isActive(self,value):
-        if value:
-            self.__isActive = True
-            self._select(self._selectedRow)
-        else:
-            self.__isActive = False
-            self._deselect(self._selectedRow)
-
-    def redraw(self):
-        title = self._title.center(self._cols)
-        self._titleWindow.addstr(0,0,title,curses.color_pair(1) | curses.A_BOLD)
-        self._titleWindow.hline(1,0,curses.ACS_HLINE,self._cols)
-        self._titleWindow.refresh()
-        self._pad.refresh(self._scrollOffset,0,self._y + 2,self._x,\
-                self._height + 3,self._cols + self._x)
-
-    def setTitle(self,newTitle):
-        self._title = newTitle[:]
-        self._titleWindow.erase()
-        title = self._title.center(self._cols)
-        self._titleWindow.addstr(0,0,title,curses.color_pair(1) | curses.A_BOLD)
-        self._titleWindow.hline(1,0,curses.ACS_HLINE,self._cols)
-        self._titleWindow.refresh()
-
-    def _newPad(self,rows):
-        if rows == 0:
-            rows = 1
-        self._pad = curses.newpad(rows,self._cols)
-        self._pad.bkgd(' ',curses.color_pair(1))
-        self._numLines = rows
-
-    def setRowData(self,data):
-        self._rowData = data[:] #make a copy of the data
-        self._pad.erase()
-        self.redraw()
-        del(self._pad)
-        self._numRows = len(self._rowData)
-        self._newPad(self._numRows)
-        for i,text in enumerate(self._rowData):
-            if i == self._selectedRow and self._isActive:
-                if self._isActive:
-                    self._pad.addstr(i,0,text,curses.color_pair(1) | \
-                            curses.A_REVERSE)
-            else:
-                self._pad.addstr(i,0,text,curses.color_pair(1))
         self._markedRows = set()
-        self.redraw()
 
+        #Windows
+        self._titleWindow = curses.newwin(1,width,row,col)
+        self._borderWindow = curses.newwin(1,width,row+1,col)
+        self._borderWindow.hline(0,0,curses.ACS_HLINE,self._width)
+        self._newPad(0)
+        
+        #Set up the title
+        self._title = (title,curses.color_pair(1))
+        #self.setTitle(title)
+
+    def refresh(self):
+        self._borderWindow.hline(0,0,curses.ACS_HLINE | curses.color_pair(1), \
+                self._width)
+        self._borderWindow.refresh()
+        self._titleWindow.addstr(0,0,*self._title)
+        self._titleWindow.refresh()
+        self._pad.refresh(self._scrollOffset,0,self._row + 2,self._col,\
+                self._row + self._visibleRows + 1,self._width + self._col)
+
+    def setTitle(self,title,attrs=None,tAlign='Left'):
+        if attrs is None:
+            attrs = curses.color_pair(1)
+        title = title[0:self._width-1]
+        if tAlign == 'Left':
+            pass
+        elif tAlign == 'Center':
+            title = '{0:^{width}}'.format(title,width=self._width-1)
+        elif tAlign == 'Right':
+            title = '{0:>{width}}'.format(title,width=self._width-1)
+        else:
+            raise ValueError("tAlign must be 'Left','Center', or 'Right'")
+        self._title = (title,attrs)
+        self._titleWindow.addstr(0,0,*self._title)
+        self.refresh()
+
+    def isActive(self):
+        return self._isActive
+
+    def setActive(self,state):
+        self._isActive = bool(state)
+
+    def setRowData(self,rowData,attrs=None):
+        if attrs is None:
+            attrs = [curses.color_pair(1)]*len(rowData)
+        self._rowData = zip(rowData,attrs)
+        
+        #clear the screen
+        self._pad.erase()
+        self.refresh()
+
+        #make a new pad
+        del(self._pad)
+        self._newPad(len(self._rowData))
+        for i,(text,attrs) in enumerate(self._rowData):
+            if i == self._selectedRow and self._isActive:
+                self._pad.addstr(i,0,text[0:self._width-1],attrs | \
+                        curses.A_REVERSE)
+            else:
+                self._pad.addstr(i,0,text[0:self._width-1],attrs)
+        
+        #clear marked rows
+        self._maredRows = set()
+        self._selectedRow = 0
+        self._touch(0)
+        self.refresh()
+
+    #navigation functions
     def scroll(self,lines=1):
         if self._scrollOffset + lines < 0:
             self._scrollOffset = 0
-        elif self._scrollOffset + lines + self._height > self._numRows:
-            if self._numRows < self._height:
+        elif self._scrollOffset + lines + self._visibleRows > len(self._rowData):
+            if len(self._rowData) < self._visibleRows:
                 self._scrollOffset = 0
             else:
-                self._scrollOffset = self._numRows - self._height
+                self._scrollOffset = len(self._rowData) - self._visibleRows
         else:
             self._scrollOffset += lines
-        self.redraw()
+        self.refresh()
 
-    def getSelectedText(self):
-        return self._rowData[self._selectedRow]
+    def moveCursor(self,lines=1):
+        self._deselect(self._selectedRow)
+        if self._selectedRow + lines < 0:
+            self._selectedRow = 0
+        elif self._selectedRow + lines >= len(self._rowData):
+            self._selectedRow = len(self._rowData) - 1
+        else:
+            self._selectedRow += lines
+        self._touch(self._selectedRow)
+        self.scroll(self._getSelectionOffset())
+
+    #row marking
+    def toggleMark(self,row):
+        self._verifyRow(row)
+        if row in self._markedRows:
+            self._markedRows.remove(row)
+        else:
+            self._markedRows.add(row)
+        self._touch(row)
+        self.refresh()
+
+    def setMark(self,row,marked=True):
+        self._verifyRow(row)
+        if marked:
+            self._markedRows.add(row)
+        else:
+            self._markedRows.remove(row)
+        self._touch(row)
+        self.refresh()
 
     def getMarkedText(self):
         return [self._rowData[i] for i in range(len(self._rowData)) if i in \
                 self._markedRows]
 
-    def _deselect(self,row):
-        if row in self._markedRows:
-            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(2))
-        else:
-            self._pad.addstr(row,0,self._rowData[row],curses.color_pair(1))
+    def getSelectedText(self):
+        return self._rowData[self._selectedRow]
 
-    def _select(self,row):
-        if len(self._rowData):
-            self._pad.addstr(row,0,self._rowData[row], \
-                    curses.color_pair(1) | curses.A_REVERSE)
+    #implementation functions
+    def _newPad(self,rows):
+        rows = 1 if rows == 0 else rows
+        self._pad = curses.newpad(rows,self._width)
+        self._pad.bkgd(' ',curses.color_pair(1))
 
-    def getSelectionOffset(self):
+    def _getSelectionOffset(self):
         if self._selectedRow < self._scrollOffset:
             return self._selectedRow - self._scrollOffset
-        elif self._selectedRow >= self._scrollOffset + self._height:
-            return self._selectedRow - self._height - self._scrollOffset + 1
+        elif self._selectedRow >= self._scrollOffset + self._visibleRows:
+            return self._selectedRow - self._visibleRows - \
+                    self._scrollOffset + 1
         else:
             return 0
 
-    def toggleMark(self,row):
+    def _touch(self,row):
+        self._verifyRow(row)
+        if row == self._selectedRow:
+            self._pad.addstr(row,0,self._rowData[row][0], \
+                    self._rowData[row][1] | curses.A_REVERSE)
+        elif row in self._markedRows:
+            self._pad.addstr(row,0,self._rowData[row][0],curses.color_pair(2))
+        else:
+            self._pad.addstr(row,0,*self._rowData[row])
+
+    def _deselect(self,row):
+        self._verifyRow(row)
         if row in self._markedRows:
-            self._markedRows.remove(row)
+            self._pad.addstr(row,0,self._rowData[row][0],curses.color_pair(2))
         else:
-            self._markedRows.add(row)
-        self._deselect(row)
-        self.redraw()
+            self._pad.addstr(row,0,*self._rowData[row])
 
-    def moveSelection(self,lines=1):
-        self._deselect(self._selectedRow)
-        if self._selectedRow + lines < 0:
-            self._selectedRow = 0
-        elif self._selectedRow + lines > self._numRows - 1:
-            self._selectedRow = self._numRows - 1
-        else:
-            self._selectedRow += lines
-        self._select(self._selectedRow)
-        self.scroll(self.getSelectionOffset())
-        self.redraw()
+    def _verifyRow(self,row):
+        if row >= len(self._rowData) or row < 0:
+            raise ValueError
 
+    #other functions
     def __len__(self):
         return len(self._rowData)
+
+class StatusColumn(Column):
+    def __init__(self,(row,col)=(0,0),title='',width=26,height=20):
+        Column.__init__(self,(row,col),title,width,height)
+        self._visibleRows -= 2
+        self._statBar = curses.newwin(1,self._width,row+self._height-2,col)
+        self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
+        self._statusBar = StatusBar((row+self._height-1,col),self._width)
+
+    def setStatus(self,status):
+        self._statusBar.setTempStatus(status)
+
+    def refresh(self):
+        Column.refresh(self)
+        self._statusBar.refresh()
+        self._statBar.refresh()
 
 class Display(object):
     def __init__(self,stdscr):
@@ -197,76 +310,46 @@ class Display(object):
         self._stdscr.nodelay(True)
         self._titleWin = curses.newwin(1,80,0,0)
         self._titleWin.bkgd(' ',curses.color_pair(1))
-        self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
-                curses.A_BOLD)
+        #self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
+                #curses.A_BOLD)
         self._borderWin = curses.newwin(24,80,0,0)
         self._borderWin.bkgd(' ',curses.color_pair(1))
         self._borderWin.hline(1,0,curses.ACS_HLINE,80)
         self._borderWin.vline(2,26,curses.ACS_VLINE,20)
         self._borderWin.vline(2,53,curses.ACS_VLINE,20)
         self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._leftColumn = Column(26,x=0,y=2,title='Players')
-        self._centerColumn = Column(26,x=27,y=2,title='')
-        self._rightColumn = Column(26,x=54,y=2,title='')
-        self._statusBar = StatusBar()
-        self._currentCol = self._leftColumn
-        self._currentCol._isActive = True
-        #self._leftColumn.setRowData(map(str,range(50)))
-        #self._centerColumn.setRowData(map(str,range(50)))
-        #self._rightColumn.setRowData(map(str,range(50)))
-        self._columns = zip(['Players',None,None],[self._leftColumn,\
-                self._centerColumn,self._rightColumn])
-        self._redraw()
+        self._columns = [('Players',Column((2,0))),\
+                ('Mesg',StatusColumn((2,27))),(None,Column((2,54)))]
+        self._statusBar = StatusBar((23,0))
+        self._colIndex = 0
+        self._columns[self._colIndex][1]._isActive = True
+        self.refresh()
 
-    def _redraw(self):
+    def refresh(self):
         self._borderWin.refresh()
         self._titleWin.refresh()
-        self._leftColumn.redraw()
-        self._centerColumn.redraw()
-        self._rightColumn.redraw()
+        for func,col in self._columns:
+            col.refresh()
         self._statusBar.refresh()
 
     def scroll(self,lines=1):
-        self._currentCol.scroll(lines)
+        self._columns[self._colIndex][1].scroll(lines)
 
     def moveSelection(self,lines=1):
-        self._currentCol.moveSelection(lines)
+        self._columns[self._colIndex][1].moveCursor(lines)
 
     def changeColSelect(self,num):
         if num == 0:
             raise ValueError
-        if num < 0:
-            if self._currentCol == self._centerColumn:
-                if len(self._leftColumn):
-                    self._centerColumn._isActive = False
-                    self._currentCol = self._leftColumn
-                    self._centerColumn.redraw()
-            elif self._currentCol == self._rightColumn:
-                if len(self._centerColumn):
-                    self._rightColumn._isActive = False
-                    self._currentCol = self._centerColumn
-                    self._rightColumn.redraw()
-                elif len(self._leftColumn):
-                    self._rightColumn._isActive = False
-                    self._currentCol = self._leftColumn
-                    self._rightColumn.redraw()
-        elif num > 0:
-            if self._currentCol == self._centerColumn:
-                if len(self._rightColumn):
-                    self._centerColumn._isActive = False
-                    self._currentCol = self._rightColumn
-                    self._centerColumn.redraw()
-            elif self._currentCol == self._leftColumn:
-                if len(self._centerColumn):
-                    self._leftColumn._isActive = False
-                    self._currentCol = self._centerColumn
-                    self._leftColumn.redraw()
-                elif len(self._rightColumn):
-                    self._leftColumn._isActive = False
-                    self._currentCol = self._rightColumn
-                    self._leftColumn.redraw()
-        self._currentCol._isActive = True
-        self._currentCol.redraw()
+        start = self._colIndex
+        step = 1 if num > 0 else -1
+        end = 2 if num > 0 else 0
+        for i in range(start+step,end+step,step):
+            if len(self._columns[i][1]) > 0:
+                self._colIndex = i
+                self._columns[start][1].setActive(False)
+                self._columns[self._colIndex][1].setActive(True)
+                break
 
     def setTitle(self,title):
         self._titleWin.erase()
@@ -274,7 +357,8 @@ class Display(object):
         self._titleWin.refresh()
 
     def toggleMark(self):
-        self._currentCol.toggleMark(self._currentCol._selectedRow)
+        i = self._colIndex
+        self._columns[i][1].toggleMark(self._columns[i][1]._selectedRow)
 
     def getCh(self):
         return self._statusBar.getCh()
