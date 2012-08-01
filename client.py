@@ -147,9 +147,9 @@ class TwistedDisplay(Display):
             #will eventually give card info
             pass
         elif char == 337:   #shift up
-            self.client.display.statusHistory(-1)
+            self.statusHistory(-1)
         elif char == 336:   #shift down
-            self.client.display.statusHistory(1)
+            self.statusHistory(1)
 
         #perhaps implement these two to allow horizontal scrolling in the status
         #bar area
