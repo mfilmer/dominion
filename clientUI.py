@@ -76,7 +76,7 @@ class StatusBar(object):
         text = prefix + text
         if len(text) >= self._length:
             text = text[0:self._length-4] + '...'
-        self._window.addstr(self._row,self._col,text,attrs)
+        self._window.addstr(0,0,text,attrs)
         self.refresh()
 
     #curses window functions
@@ -130,7 +130,8 @@ class Column(object):
         self._newPad(0)
         
         #Set up the title
-        self.setTitle(title)
+        self._title = (title,curses.color_pair(1))
+        #self.setTitle(title)
 
     def refresh(self):
         self._borderWindow.hline(0,0,curses.ACS_HLINE | curses.color_pair(1), \
@@ -154,6 +155,7 @@ class Column(object):
         else:
             raise ValueError("tAlign must be 'Left','Center', or 'Right'")
         self._title = (title,attrs)
+        self._titleWindow.addstr(0,0,*self._title)
         self.refresh()
 
     def isActive(self):
@@ -258,16 +260,14 @@ class Column(object):
             self._pad.addstr(row,0,self._rowData[row][0], \
                     self._rowData[row][1] | curses.A_REVERSE)
         elif row in self._markedRows:
-            self._pad.addstr(row,0,self._rowData[row][0], \
-                    self._rowData[row][1] | curses.color_pair(2))
+            self._pad.addstr(row,0,self._rowData[row][0],curses.color_pair(2))
         else:
             self._pad.addstr(row,0,*self._rowData[row])
 
     def _deselect(self,row):
         self._verifyRow(row)
         if row in self._markedRows:
-            self._pad.addstr(row,0,self._rowData[row][0],\
-                    self._rowData[row][1] | curses.color_pair(2))
+            self._pad.addstr(row,0,self._rowData[row][0],curses.color_pair(2))
         else:
             self._pad.addstr(row,0,*self._rowData[row])
 
@@ -280,14 +280,20 @@ class Column(object):
         return len(self._rowData)
 
 class StatusColumn(Column):
-    def __init__(self,(row,col)=(0,0),width=26):
-        Column.__init__()
-        self._visibleRows -= 1
-        self._statusBar = StatusBar()
+    def __init__(self,(row,col)=(0,0),title='',width=26,height=20):
+        Column.__init__(self,(row,col),title,width,height)
+        self._visibleRows -= 2
+        self._statBar = curses.newwin(1,self._width,row+self._height-2,col)
+        self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
+        self._statusBar = StatusBar((row+self._height-1,col),self._width)
 
-    def refresh():
+    def setStatus(self,status):
+        self._statusBar.setTempStatus(status)
+
+    def refresh(self):
         Column.refresh(self)
         self._statusBar.refresh()
+        self._statBar.refresh()
 
 class Display(object):
     def __init__(self,stdscr):
@@ -304,80 +310,46 @@ class Display(object):
         self._stdscr.nodelay(True)
         self._titleWin = curses.newwin(1,80,0,0)
         self._titleWin.bkgd(' ',curses.color_pair(1))
-        self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
-                curses.A_BOLD)
+        #self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
+                #curses.A_BOLD)
         self._borderWin = curses.newwin(24,80,0,0)
         self._borderWin.bkgd(' ',curses.color_pair(1))
         self._borderWin.hline(1,0,curses.ACS_HLINE,80)
-        self._borderWin.vline(2,27,curses.ACS_VLINE,20)
+        self._borderWin.vline(2,26,curses.ACS_VLINE,20)
         self._borderWin.vline(2,53,curses.ACS_VLINE,20)
         self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._leftColumn = Column((2,0))
-        self._centerColumn = Column((2,28))
-        self._rightColumn = Column((2,54),'')
-        self._statusBar = StatusBar()
-        self._currentCol = self._leftColumn
-        self._currentCol._isActive = True
-        #self._leftColumn.setRowData(map(str,range(50)))
-        #self._centerColumn.setRowData(map(str,range(50)))
-        #self._rightColumn.setRowData(map(str,range(50)))
-        self._columns = zip(['Players',None,None],[self._leftColumn,\
-                self._centerColumn,self._rightColumn])
-        #self._columns = zip(['Players',None],\
-                #[self._leftColumn,self._centerColumn])
-        self._redraw()
+        self._columns = [('Players',Column((2,0))),\
+                ('Mesg',StatusColumn((2,27))),(None,Column((2,54)))]
+        self._statusBar = StatusBar((23,0))
+        self._colIndex = 0
+        self._columns[self._colIndex][1]._isActive = True
+        self.refresh()
 
-    def _redraw(self):
+    def refresh(self):
         self._borderWin.refresh()
         self._titleWin.refresh()
         for func,col in self._columns:
             col.refresh()
-        #self._leftColumn.refresh()
-        #self._centerColumn.refresh()
-        #self._rightColumn.refresh()
         self._statusBar.refresh()
 
     def scroll(self,lines=1):
-        self._currentCol.scroll(lines)
+        self._columns[self._colIndex][1].scroll(lines)
 
     def moveSelection(self,lines=1):
-        self._currentCol.moveCursor(lines)
+        self._columns[self._colIndex][1].moveCursor(lines)
 
     def changeColSelect(self,num):
         if num == 0:
             raise ValueError
-        if num < 0:
-            if self._currentCol == self._centerColumn:
-                if len(self._leftColumn):
-                    self._centerColumn._isActive = False
-                    self._currentCol = self._leftColumn
-                    self._centerColumn.refresh()
-            elif self._currentCol == self._rightColumn:
-                if len(self._centerColumn):
-                    self._rightColumn._isActive = False
-                    self._currentCol = self._centerColumn
-                    self._rightColumn.refresh()
-                elif len(self._leftColumn):
-                    self._rightColumn._isActive = False
-                    self._currentCol = self._leftColumn
-                    self._rightColumn.refresh()
-        elif num > 0:
-            if self._currentCol == self._centerColumn:
-                if len(self._rightColumn):
-                    self._centerColumn._isActive = False
-                    self._currentCol = self._rightColumn
-                    self._centerColumn.refresh()
-            elif self._currentCol == self._leftColumn:
-                if len(self._centerColumn):
-                    self._leftColumn._isActive = False
-                    self._currentCol = self._centerColumn
-                    self._leftColumn.refresh()
-                elif len(self._rightColumn):
-                    self._leftColumn._isActive = False
-                    self._currentCol = self._rightColumn
-                    self._leftColumn.refresh()
-        self._currentCol._isActive = True
-        self._currentCol.refresh()
+        start = self._colIndex
+        step = 1 if num > 0 else -1
+        end = 2 if num > 0 else 0
+        for i in range(start+step,end+step,step):
+            if len(self._columns[i][1]) > 0:
+                self._colIndex = i
+                self._columns[start][1].setActive(False)
+                self._columns[self._colIndex][1].setActive(True)
+                break
 
     def setTitle(self,title):
         self._titleWin.erase()
@@ -385,7 +357,8 @@ class Display(object):
         self._titleWin.refresh()
 
     def toggleMark(self):
-        self._currentCol.toggleMark(self._currentCol._selectedRow)
+        i = self._colIndex
+        self._columns[i][1].toggleMark(self._columns[i][1]._selectedRow)
 
     def getCh(self):
         return self._statusBar.getCh()
