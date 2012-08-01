@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from clientUI import *
 
 class TheClient(Display):
@@ -25,7 +27,13 @@ class TheClient(Display):
         elif char == curses.KEY_RIGHT:
             self.changeColSelect(1)
         elif char == ord('n'):
-            self.client.sendLine('advance phase')
+            self.setStatus('advance phase')
+        elif char == ord('a'):
+            self.setStatus('this is a test of the emergency broadcast system'\
+                    +' this is only a test, fear not, it is only a test')
+        elif char == ord('o'):
+            self.setStatus('now we are planning on saying more random stuff'\
+                    +' such as the quick brown fox jumps over the lazy dog')
         elif char == ord('q'):
             return True
         elif char == ord(' '):
@@ -40,9 +48,9 @@ class TheClient(Display):
             #will eventually give card info
             pass
         elif char == 337:   #shift up
-            self.client.display.statusHistory(-1)
+            self.statusHistory(1)
         elif char == 336:   #shift down
-            self.client.display.statusHistory(1)
+            self.statusHistory(-1)
         return False
 
 def main(stdscr):

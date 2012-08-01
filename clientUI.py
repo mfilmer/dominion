@@ -7,10 +7,12 @@ import string
 from twisted.internet.protocol import Protocol
 
 class StatusBar(object):
-    def __init__(self,(row=0,col=0),len=80):
+    def __init__(self,(row,col)=(0,0),length=80):
         self._statusHistory = []
-        self._length = len
-        self._window = curses.newwin(1,len,row,col)
+        self._length = length
+        self._row = row
+        self._col = col
+        self._window = curses.newwin(1,length,row,col)
         self.keypad(True)
         self.nodelay(True)
         self.bkgd(' ',curses.color_pair(1))
@@ -21,39 +23,69 @@ class StatusBar(object):
         """Get a character that was typed, or -1 if no character was typed"""
         return self._window.getch()
 
-    #todo: finish
-    def setStatus(self,status,attrs=curses.color_pair(1)):
+    def setStatus(self,status,*nattrs):
+        if len(nattrs) == 0:
+            attrs = curses.color_pair(1)
+        else:
+            attrs = 0
+            for attr in nattrs:
+                attrs |= attr
         self._statusHistory.append((status,attrs))
         self.erase()
         if self._index == 0:
             self._horizOffset = 0
             self._displayText(*self._statusHistory[-1])
         else:
-            self._displayText(str(-self._index+2)+': ' + \
-                    self._statusHistory[-self._index-1])
             self._index += 1
+            self._displayText(str(self._index)+': ' + \
+                    self._statusHistory[-self._index-1][0],\
+                    self._statusHistory[-self._index-1][1])
+
+    def setTempStatus(self,status,*nattrs):
+        if len(nattrs) == 0:
+            attrs = curses.color_pair(1)
+        else:
+            attrs = 0
+            for attr in nattrs:
+                attrs |= attr
+        self.erase()
+        self._displayText(status,attrs)
 
     #history/scrolling functions
-    #todo: finish
     def scrollHistory(self,step):
-        pass
+        self._index += step
+        self._horizOffset = 0
+        if self._index < 0:
+            self._index = 0
+        elif self._index > len(self._statusHistory)-1:
+            self._index = len(self._statusHistory)-1
+        self.erase()
+        if self._index == 0:
+            self._displayText(*self._statusHistory[-1])
+        else:
+            self._displayText(str(self._index)+': ' + \
+                    self._statusHistory[-self._index-1][0],\
+                    self._statusHistory[-self._index-1][1])
 
     #todo: finish
     def scrollCurrent(self,step):
         """Scroll the current message horizontally. The step parameter indicates
         how many characters to the right to view (negative values view left)."""
-        pass
+        self._horizOffset += step
+        if self._horizOffset < 0:
+            self._horizOffset = 0
 
     #Implementation Functions
     #todo: finish
     def _displayText(self,text,attrs):
         """Physically write the status as it should be displayed (including
         any offsets for scrolling. This also refreshes the curses window"""
-        #i'm not really sure whats with the length-1, but its necessary
+        #i'm not really sure whats with the self._length-1, but its necessary
         if len(text) > self._length-1:
-            self._window.addstr(0,0,status[0:76]+'...',attrs)
+            self._window.addstr(self._row,self._col,\
+                    text[0:self._length-4]+'...',attrs)
         else:
-            self._window.addstr(0,0,status,attrs)
+            self._window.addstr(self._row,self._col,status,attrs)
         self.refresh()
 
     #curses window functions
@@ -75,51 +107,6 @@ class StatusBar(object):
     #other functions
     def __len__(self):
         return len(self._statusHistory)
-
-class StatusBar(object):
-    def __init__(self):
-        self._statusHistory = []
-        self._window = curses.newwin(1,80,23,0)
-        self._window.keypad(True)
-        self._window.nodelay(True)
-        self._window.bkgd(' ',curses.color_pair(1))
-        self._index = -1
-
-    def setStatus(self,newStatus):
-        self._statusHistory.append(newStatus)
-        self._window.erase()
-        if self._index == -1:
-            self._printStatus(self._statusHistory[-1])
-        else:
-            self._printStatus(str(-self._index-1)+': ' + \
-                    self._statusHistory[self._index])
-            self._index -= 1
-
-    def getCh(self):
-        return self._window.getch()
-
-    def refresh(self):
-        self._window.refresh()
-
-    def scrollHistory(self,step):
-        self._index += step
-        if self._index > -1:
-            self._index = -1
-        elif self._index < -len(self._statusHistory):
-            self._index = -len(self._statusHistory)
-        self._window.erase()
-        if self._index == -1:
-            self._printStatus(self._statusHistory[-1])
-        else:
-            self._printStatus(str(-self._index-1)+': ' + \
-                    self._statusHistory[self._index])
-
-    def _printStatus(self,status):
-        if len(status) > 79:
-            self._window.addstr(0,0,status[0:76]+'...',curses.color_pair(1))
-        else:
-            self._window.addstr(0,0,status,curses.color_pair(1))
-        self.refresh()
 
 class Column(object):
     def __init__(self,cols,x=0,y=0,title='Untitled',height=21):
@@ -274,7 +261,7 @@ class Display(object):
         self._borderWin.vline(2,26,curses.ACS_VLINE,20)
         self._borderWin.vline(2,53,curses.ACS_VLINE,20)
         self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._leftColumn = Column(26,x=0,y=2,title='Players')
+        self._leftColumn = Column(26,x=0,y=2,title='')
         self._centerColumn = Column(26,x=27,y=2,title='')
         self._rightColumn = Column(26,x=54,y=2,title='')
         self._statusBar = StatusBar()
