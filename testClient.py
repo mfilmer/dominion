@@ -59,6 +59,8 @@ class TheClient(Display):
 
 def main(stdscr):
     display = TheClient(stdscr)
+    display._leftColumn.setTitle('test',curses.A_BOLD | curses.color_pair(1), \
+            tAlign='Center')
     while not display.checkForInput():
         pass
     for i in xrange(25):
