@@ -47,9 +47,13 @@ class TheClient(Display):
         elif char == ord('?'):
             #will eventually give card info
             pass
-        elif char == 337:   #shift up
+        elif char == 337:   #shift up (linux)
             self.statusHistory(1)
-        elif char == 336:   #shift down
+        elif char == 336:   #shift down (linux)
+            self.statusHistory(-1)
+        elif char == 547:   #shift up (windows)
+            self.statusHistory(1)
+        elif char == 548:   #shift down (windows)
             self.statusHistory(-1)
         return False
 
