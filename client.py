@@ -29,12 +29,10 @@ class GameClient(LineReceiver):
         elif line == 'okay':
             pass
         elif line == 'starting':
-            self.display._columns = zip(['Hand','Field','Store'],\
-                    [self.display._leftColumn,self.display._centerColumn,\
-                    self.display._rightColumn])
-            self.display._leftColumn.setTitle('Hand')
-            self.display._centerColumn.setTitle('Field')
-            self.display._rightColumn.setTitle('Store')
+            self.display._columns = [(['Hand','Field','Store'][i],\
+                    self.display._columns[i][1]) for i in range(3)]
+            for func,col in self.display._columns:
+                col.setTitle(func)
             self.gameRunning = True
             self.display.setTitle('Dominion')
         elif line == 'your turn':

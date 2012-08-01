@@ -106,7 +106,7 @@ class StatusBar(object):
         self._statusHistory[-self._index-1] = value
 
 class Column(object):
-    def __init__(self,(row,col)=(0,0),title='',width=26,height=20):
+    def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         #row data
         self._rowData = []
         self._isActive = False
@@ -280,8 +280,8 @@ class Column(object):
         return len(self._rowData)
 
 class StatusColumn(Column):
-    def __init__(self,(row,col)=(0,0),title='',width=26,height=20):
-        Column.__init__(self,(row,col),title,width,height)
+    def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
+        Column.__init__(self,(row,col),title,height,width)
         self._visibleRows -= 2
         self._statBar = curses.newwin(1,self._width,row+self._height-2,col)
         self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
@@ -308,19 +308,21 @@ class Display(object):
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
         self._stdscr.nodelay(True)
+        self._termHeight = stdscr.getmaxyx()[0]
         self._titleWin = curses.newwin(1,80,0,0)
         self._titleWin.bkgd(' ',curses.color_pair(1))
         #self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
                 #curses.A_BOLD)
-        self._borderWin = curses.newwin(24,80,0,0)
+        self._borderWin = curses.newwin(self._termHeight,80,0,0)
         self._borderWin.bkgd(' ',curses.color_pair(1))
         self._borderWin.hline(1,0,curses.ACS_HLINE,80)
-        self._borderWin.vline(2,26,curses.ACS_VLINE,20)
-        self._borderWin.vline(2,53,curses.ACS_VLINE,20)
-        self._borderWin.hline(22,0,curses.ACS_HLINE,80)
-        self._columns = [('Players',Column((2,0))),\
-                ('Mesg',StatusColumn((2,27))),(None,Column((2,54)))]
-        self._statusBar = StatusBar((23,0))
+        self._borderWin.vline(2,26,curses.ACS_VLINE,self._termHeight-4)
+        self._borderWin.vline(2,53,curses.ACS_VLINE,self._termHeight-4)
+        self._borderWin.hline(self._termHeight-2,0,curses.ACS_HLINE,80)
+        self._columns = [('Players',Column((2,0),height=self._termHeight-4)),\
+                ('Mesg',StatusColumn((2,27),height=self._termHeight-4)),\
+                (None,Column((2,54),height=self._termHeight-4))]
+        self._statusBar = StatusBar((self._termHeight-1,0))
         self._colIndex = 0
         self._columns[self._colIndex][1]._isActive = True
         self.refresh()
