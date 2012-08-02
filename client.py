@@ -2,15 +2,14 @@
 
 import curses
 from clientUI import *
+
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.protocols.basic import LineReceiver
 
-import os
-
-import argparse
-
+import os           #check what os we are on for the windows twisted hack
 import getpass      #used to get logged in username
+import argparse
 
 class GameClient(LineReceiver):
     def __init__(self,factory,display):
@@ -52,6 +51,8 @@ class GameClient(LineReceiver):
                 self.display.discard = eval(line[15:])
             elif line[6:13] == 'store: ':
                 self.display.store = eval(line[13:])
+            elif line[6:13] == 'stash: ':
+                self.display.setStash(*tuple(map(int,line[13:].split())))
             else:
                 self.unrecognizedServerRequest(line)
         elif line[0:6] == 'turn: ':
@@ -224,6 +225,20 @@ class TwistedDisplay(Display):
             for contents,column in self._columns:
                 if contents == 'Players':
                     column.setRowData(self._playerList)
+
+    def updateStashBar(self):
+        for func,col in self._columns:
+            if func == 'Field':
+                B = '{0:<9}'.format('B:'+str(self._buys))
+                A = '{0:^8}'.format('A:'+str(self._actions))
+                M = '{0:>8}'.format('$:'+str(self._money))
+                col.setStatus(B+A+M)
+
+    def setStash(self,buys,actions,money):
+        self._buys = buys
+        self._actions = actions
+        self._money = money
+        self.updateStashBar()
 
     @property
     def hand(self):
