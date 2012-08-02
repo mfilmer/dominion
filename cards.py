@@ -632,9 +632,6 @@ class adventurer(Card):
             else:
                 card.move(discard)
 ### Intrigue
-#Cost: 2
-#+3 Cards
-#Put a card from your hand on top of your deck
 class courtyard(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
@@ -646,9 +643,7 @@ class courtyard(Card):
         self._fullText = 'Cost: 2\n+3 cards\nPut a card from your hand on top \
         of your deck'
         ### needs help
-
-#Cost: 2
-#Choose two: +1 Card; +1 Action; +1 Buy; +$1. (The choices must be different.)        
+       
 class pawn(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
@@ -659,11 +654,7 @@ class pawn(Card):
         self._fullText = 'Cost: 2\nChoose two: +1 Card; +1 Action; +1 Buy; \
         +$1. (The choices must be different.)'
         ### needs help
-
-#Cost: 2
-#Discard any number of cards. +1$ per card discarded. When another player 
-#plays an Attack card, you may reveal this from your hand. If you do, +2 \
-#cards, then put 2 cards from your hand on top of your deck.        
+      
 class secretChamber(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
@@ -676,8 +667,8 @@ class secretChamber(Card):
          When another player plays an Attack card, you may reveal this from \
          your hand. If you do, +2 cards, then put 2 cards from your hand on \
          top of your deck.'
-   
-#I'm not going to put these comments anymore. No I am not   
+         ### needs help
+    
 class greatHall(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
@@ -689,3 +680,47 @@ class greatHall(Card):
         self._effects['cards'] = 1
         self._effects['actions'] = 1
         self._fullText = '1 VP\n+1 card\n+1 action'
+        
+class masquerade(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Masquerade'
+        self._cost = 3
+        self._effects['cards'] = 2
+        self._extraPrompts = ['Trash a card:']
+        self._fullText = '+2 cards\nEach player passes a card in their hand \
+        to the player on their left. You may trash a card from your hand.'
+        ### needs help
+
+class shantyTown(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Shanty Town'
+        self._cost = 3
+        self._effects['actions'] = 2
+        self._fullText = '+2 actions\nReveal your hand. If you have no action \
+        cards in hand, +2 cards.'
+        ### needs help
+        
+class swindler(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Swindler'
+        self._cost = 3
+        self._type = ['Action','Attack']
+        self._effects['money'] = 2
+        self._fullText = '+2$\nEach other player trashes the top card of his \
+        deck and gains a card with the same cost that you choose.'
+        ### needs help
+        
+class wishingWell(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Wishing Well'
+        self._cost = 3
+        self._effects['actions'] = 1
+        self._effects['cards'] = 1
+        self._extraPrompts = ['Name a card']
+        self._fullText = '+1 card\n+1 action\nName a card, then reveal the \
+        top card of your deck. If it is the named card, put it in your hand.'
+        ### needs help
