@@ -14,6 +14,7 @@ class Card(object):
         self._name = '<Unnammed>'
         self._types = ['Action']
         self._fullText = '<Blank>'
+        self._expansion = 'Base'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
@@ -137,7 +138,7 @@ class curse(Card):
         self._playablePhases = []
         self._types = ['Victory']
         self._fullText = '-1 VP'
-
+### Base Set
 #Cost: 2
 #+1 Action
 #Discard n cards
@@ -630,3 +631,61 @@ class adventurer(Card):
                 card.move(hand)
             else:
                 card.move(discard)
+### Intrigue
+#Cost: 2
+#+3 Cards
+#Put a card from your hand on top of your deck
+class courtyard(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Courtyard'
+        self._cost = 2
+        self._extraPrompts = ['Card to put on top']
+        self._effects['cards'] = 3
+        self._expansion = 'Intrigue'
+        self._fullText = 'Cost: 2\n+3 cards\nPut a card from your hand on top \
+        of your deck'
+        ### needs help
+
+#Cost: 2
+#Choose two: +1 Card; +1 Action; +1 Buy; +$1. (The choices must be different.)        
+class pawn(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Pawn'
+        self._cost = 2
+        self._extraPrompts = ['Choose two']
+        self._expansion = 'Intrigue'
+        self._fullText = 'Cost: 2\nChoose two: +1 Card; +1 Action; +1 Buy; \
+        +$1. (The choices must be different.)'
+        ### needs help
+
+#Cost: 2
+#Discard any number of cards. +1$ per card discarded. When another player 
+#plays an Attack card, you may reveal this from your hand. If you do, +2 \
+#cards, then put 2 cards from your hand on top of your deck.        
+class secretChamber(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Secret Chamber'
+        self._cost = 2
+        self._playablePhases = [phase.action,phase.wait]
+        self._type = ['Action','Reaction']
+        self._extraPrompts = ['Discard any number of cards']
+        self._fullText = 'Discard any number of cards. +1$ per card discarded.\
+         When another player plays an Attack card, you may reveal this from \
+         your hand. If you do, +2 cards, then put 2 cards from your hand on \
+         top of your deck.'
+   
+#I'm not going to put these comments anymore. No I am not   
+class greatHall(Card):
+    def __init__(self,pile):
+        Card.__init__(self,pile)
+        self._name = 'Great Hall'
+        self._victoryPoints = 1
+        self._cost = 3
+        self._types = ['Action','Victory']
+        self._expansion = 'Intrigue'
+        self._effects['cards'] = 1
+        self._effects['actions'] = 1
+        self._fullText = '1 VP\n+1 card\n+1 action'
