@@ -144,6 +144,9 @@ class ColList(object):
             raise ValueError
         return self._columns[index]
 
+    def __iter__(self):
+        return iter(self._columns)
+
 class Column(object):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         #row data
