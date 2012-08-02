@@ -229,7 +229,7 @@ class turn(object):
     def _addBuys(self,buys):
         self._buys += buys
 
-class card(object):
+class Card(object):
     def __init__(self,startPile):
         self._pile = startPile
         self._victoryPoints = 0
@@ -380,7 +380,7 @@ class store(pile):
     def getName(self):
         return self._name
 
-    def addNew(self,newCard=card):
+    def addNew(self,newCard=Card):
         raise Exception('cards cannot be added to a store')
 
     def __len__(self):
@@ -448,9 +448,9 @@ class deck(pile):
 #Gold cards
 #todo: figure out how to make gold cards not use up actions
 #Cost: 0
-class gold1(card):
+class gold1(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Copper'
         self._cost = 0
         self._effects['money'] = 1
@@ -459,9 +459,9 @@ class gold1(card):
         self._fullText = '1$'
 
 #Cost: 3
-class gold2(card):
+class gold2(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Silver'
         self._cost = 3
         self._effects['money'] = 2
@@ -470,9 +470,9 @@ class gold2(card):
         self._fullText = '2$'
 
 #Cost 6
-class gold3(card):
+class gold3(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Gold'
         self._cost = 6
         self._effects['money'] = 3
@@ -483,9 +483,9 @@ class gold3(card):
 #Land (or whatever their real name is) cards
 #todo: figure out how ot make victory cards not playable
 #Cost: 2
-class victory1(card):
+class victory1(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Estate'
         self._cost = 2
         self._victoryPoints = 1
@@ -494,9 +494,9 @@ class victory1(card):
         self._fullText = '1 VP'
 
 #Cost: 5
-class victory3(card):
+class victory3(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Duchy'
         self._cost = 5
         self._victoryPoints = 2
@@ -505,9 +505,9 @@ class victory3(card):
         self._fullText = '3 VP'
 
 #Cost: 8
-class victory6(card):
+class victory6(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Province'
         self._cost = 8
         self._victoryPoints = 3
@@ -515,9 +515,9 @@ class victory6(card):
         self._types = ['Victory']
         self._fullText = '6 VP'
 
-class curse(card):
+class curse(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Curse'
         self._cost = 0
         self._victoryPoints = -1
@@ -529,9 +529,9 @@ class curse(card):
 #+1 Action
 #Discard n cards
 #Draw n cards
-class cellar(card):
+class cellar(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Cellar'
         self._cost = 2
         self._effects['actions'] = 1
@@ -562,9 +562,9 @@ class cellar(card):
 
 #Cost: 2
 #Trash up to 4 cards from your hand
-class chapel(card):
+class chapel(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Chapel'
         self._cost = 2
         self._extraPrompts = ['Cards to Trash']
@@ -593,9 +593,9 @@ class chapel(card):
 #+2 Cards
 #When another player plays an Attack card, you may reveal this from your hand.
 #If you do, you are unaffected by that Attack
-class moat(card):
+class moat(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Moat'
         self._cost = 2
         self._playablePhases = [phase.action,phase.wait]
@@ -610,9 +610,9 @@ class moat(card):
 #Cost: 2
 #+2
 #You may immediately put your deck into your discard pile
-class chancellor(card):
+class chancellor(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Chancellor'
         self._cost = 2
         self._effects['money'] = 2
@@ -636,9 +636,9 @@ class chancellor(card):
 #Cost: 3
 #+1 Card
 #+2 Actions
-class village(card):
+class village(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Village'
         self._cost = 3
         self._effects['cards'] = 1
@@ -648,9 +648,9 @@ class village(card):
 #Cost: 3
 #+1 Buy
 #+$2
-class woodcutter(card):
+class woodcutter(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Woodcutter'
         self._cost = 3
         self._effects['buys'] = 1
@@ -659,9 +659,9 @@ class woodcutter(card):
 
 #Cost: 3
 #Gain a card costing up to $4
-class workshop(card):
+class workshop(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Workshop'
         self._cost = 3
         self._extraPrompts = ['Card to Gain']
@@ -683,9 +683,9 @@ class workshop(card):
 #Gain a silver card; put it on top of your deck. Each other player reveals a
 #Victory card from his hand and puts it on his deck (or reveals a hand with no
 #Victory cards)
-class bureaucrat(card):
+class bureaucrat(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Bureaucrat'
         self._cost = 4
         self._types = ['Action','Attack']
@@ -695,9 +695,9 @@ class bureaucrat(card):
 
 #Cost: 4
 #Trash this card. Gain a card costing up to $5
-class feast(card):
+class feast(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Feast'
         self._cost = 4
         #self._cost = 0
@@ -721,9 +721,9 @@ class feast(card):
 
 #Cost: 4
 #Worth 1 Victory for every 10 cards in your deck (rounded down)
-class gardens(card):
+class gardens(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Gardens'
         self._cost = 4
         self._playablePhases = []
@@ -736,9 +736,9 @@ class gardens(card):
 
 #Cost: 4
 #Each other player discards down to 3 cards in his hand.
-class militia(card):
+class militia(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Militia'
         self._cost = 4
         self._effects['money'] = 2
@@ -747,9 +747,9 @@ class militia(card):
 
 #Cost: 4
 #Trash a Copper from your hand. If you do, +$3
-class moneylender(card):
+class moneylender(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Moneylender'
         self._cost = 4
         self._fullText = 'Cost: 4\nTrash a Copper from your hand. If you do, \
@@ -769,9 +769,9 @@ class moneylender(card):
 #Cost: 4
 #Trash a card from your hand. Gain a card costing up to $2 more than the trashed
 #card
-class remodel(card):
+class remodel(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Remodel'
         self._cost = 4
         self._extraPrompts = ['Card to Trash','Card to Gain']
@@ -802,9 +802,9 @@ class remodel(card):
 
 #Cost: 4
 #+3 cards
-class smithy(card):
+class smithy(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Smithy'
         self._cost = 4
         self._effects['cards'] = 3
@@ -815,9 +815,9 @@ class smithy(card):
 #+1 action
 #Each player (including you) reveals the top card of his deck and either
 #discards it or puts it back, your choice
-class spy(card):
+class spy(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Spy'
         self._cost = 4
         self._type = ['Action','Attack']
@@ -830,9 +830,9 @@ class spy(card):
 #Each other player reveals the top 2 cards of his deck. If they revealed any
 #Treasure cards, they trash one of them that you choose. You may gain any or all
 #of these trashed cards. They discard the other revealed cards.
-class thief(card):
+class thief(Card):
     def __init__(self,pile):
-        card.__init__(self)
+        Card.__init__(self)
         self._name = 'Thief'
         self._cost = 4
         self._type = ['Action','Attack']
@@ -843,9 +843,9 @@ class thief(card):
 
 #Cost: 4
 #Choose an Action card in your hand. Play it twice
-class throneRoom(card):
+class throneRoom(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Throne Room'
         self._cost = 4
         self._fullText = 'Cost: 4\n Choose an Action card in your hand. Play \
@@ -855,9 +855,9 @@ class throneRoom(card):
 #+4 Cards
 #+1 Buy
 #Each other player draws a card
-class councilRoom(card):
+class councilRoom(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Council Room'
         self._cost = 5
         self._effects['cards'] = 4
@@ -876,9 +876,9 @@ class councilRoom(card):
 #+2 Actions
 #+1 Buy
 #+$2
-class festival(card):
+class festival(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Festival'
         self._cost = 5
         self._effects['actions'] = 2
@@ -889,9 +889,9 @@ class festival(card):
 #Cost: 5
 #+2 Cards
 #+1 Action
-class laboratory(card):
+class laboratory(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Laboratory'
         self._cost = 5
         self._effects['cards'] = 2
@@ -902,9 +902,9 @@ class laboratory(card):
 #Draw until you have 7 cards in hand. You may set aside any Action cards drawn
 #this way, as you draw them; discard the set aside cards after you finish
 #drawing.
-class library(card):
+class library(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Library'
         self._cost = 5
         self._fullText = 'Cost: 5\nDraw until you have 7 cards in hand. You \
@@ -916,9 +916,9 @@ class library(card):
 #+1 Action
 #+1 Buy
 #+$1
-class market(card):
+class market(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Market'
         self._cost = 5
         self._effects['money'] = 1
@@ -930,9 +930,9 @@ class market(card):
 #Cost: 5
 #Trash a Treasure card from your hand. Gain a Treasure card costing up to $3
 #more; put it into your hand.
-class mine(card):
+class mine(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Mine'
         self._cost = 5
         self._extraPrompts = ['Card to Trash']
@@ -965,9 +965,9 @@ class mine(card):
 #Cost: 5
 #+2 Cards
 #Each other player gains a Curse card
-class witch(card):
+class witch(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Witch'
         self._cost = 5
         self._type = ['Action','Attack']
@@ -986,9 +986,9 @@ class witch(card):
 #Cost: 6
 #Reveal cards from your deck until you reveal 2 Treasure cards. Put those
 #Treasure cards in your hand and discard the other revealed cards
-class adventurer(card):
+class adventurer(Card):
     def __init__(self,pile):
-        card.__init__(self,pile)
+        Card.__init__(self,pile)
         self._name = 'Adventurer'
         self._cost = 6
         self._fullText = 'Cost: 6\nReveal cards from your deck until you \

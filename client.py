@@ -165,7 +165,7 @@ class TwistedDisplay(Display):
         if client.gameRunning == True:
             #get selected column and its function
             for function,column in self._columns:
-                if column == self._currentCol:
+                if column == self._columns[self._currentCol][1]:
                     break       #yeah, this actually does something
             if client.myTurn:
                 if client.phase == 'Action':
@@ -192,10 +192,10 @@ class TwistedDisplay(Display):
 
     def getSelectedCardName(self):
         for func,col in self._columns:
-            if col == self._currentCol:
+            if col == self._columns[self._colIndex]:
                 break
         if func == 'Hand' or func == 'Field':
-            return self._currentCol.getSelectedText().split()[1]
+            return self._columns[self._colIndex][1].getSelectedText().split()[1]
         elif func == 'Store':
             return self._currentCol.getSelectedText().split()[2]
         else:

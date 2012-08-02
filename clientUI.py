@@ -105,6 +105,45 @@ class StatusBar(object):
     def __setitem__(self,value):
         self._statusHistory[-self._index-1] = value
 
+class ColList(object):
+    def __init__(self,columns,functions):
+        if len(columns) == 0:
+            raise ValueError
+        if len(columns) != len(functions):
+            raise ValueError
+        self._columns = zip(functions,columns)
+        self._index = 0
+
+    def getCol(self,index=None):
+        if index is None:
+            return self._columns[self._index][1]
+        if index >= len(self._columns) or index < 0:
+            raise ValueError
+        return self._columns[index][1]
+
+    def getFunc(self,index=None):
+        if index is None:
+            return self._columns[self._index][0]
+        if index >= len(self._columns) or index < 0:
+            raise ValueError
+        return self._columns[index][0]
+
+    def setCurrent(self,index):
+        if index >= len(self._columns) or index < 0:
+            raise ValueError
+        self._index = index
+
+    def isActive(self,index):
+        return index == self._index
+
+    def __len__(self):
+        return len(self._columns)
+
+    def __getitem__(self,index):
+        if index >= len(self._columns) or index < 0:
+            raise ValueError
+        return self._columns[index]
+
 class Column(object):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         #row data
@@ -319,9 +358,13 @@ class Display(object):
         self._borderWin.vline(2,26,curses.ACS_VLINE,self._termHeight-4)
         self._borderWin.vline(2,53,curses.ACS_VLINE,self._termHeight-4)
         self._borderWin.hline(self._termHeight-2,0,curses.ACS_HLINE,80)
-        self._columns = [('Players',Column((2,0),height=self._termHeight-4)),\
-                ('Mesg',StatusColumn((2,27),height=self._termHeight-4)),\
-                (None,Column((2,54),height=self._termHeight-4))]
+        colHeight = self._termHeight - 4
+        self._columns = ColList([Column((2,0),height=colHeight),\
+                Column((2,27),height=colHeight),\
+                Column((2,54),height=colHeight)],['Players','Mesg',None])
+        #self._columns = [('Players',Column((2,0),height=self._termHeight-4)),\
+                #('Mesg',StatusColumn((2,27),height=self._termHeight-4)),\
+                #(None,Column((2,54),height=self._termHeight-4))]
         self._statusBar = StatusBar((self._termHeight-1,0))
         self._colIndex = 0
         self._columns[self._colIndex][1]._isActive = True
