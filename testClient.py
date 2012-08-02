@@ -13,7 +13,9 @@ class TheClient(Display):
 
     def checkForInput(self):           #called by twisted's reactor
         char = self.getCh()
-        if char == 27:          #ESC key
+        if char == -1:          #no key was pressed
+            pass
+        elif char == 27:          #ESC key
             #will eventually clear selection
             pass
         elif char == curses.KEY_NPAGE:
@@ -57,6 +59,8 @@ class TheClient(Display):
             self.statusHistory(1)
         elif char == 548:   #shift down (windows)
             self.statusHistory(-1)
+        #else:
+            #raise Exception(char)
         return False
 
 def main(stdscr):

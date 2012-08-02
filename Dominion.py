@@ -220,6 +220,9 @@ class turn(object):
         if self.isPhase('cleanup'):
             self._player.getDeck().cleanup()
             self._phase += 1
+            self._money = 0
+            self._actions = 0
+            self._buys = 0
 
     def _addActions(self,numActions):
         self._actions += numActions
@@ -229,60 +232,6 @@ class turn(object):
 
     def _addBuys(self,buys):
         self._buys += buys
-
-#class Card(object):
-    #def __init__(self,startPile):
-        #self._pile = startPile
-        #self._victoryPoints = 0
-        #self._cost = 0
-        #self._playablePhases = [phase.action]
-        #self._extraPrompts = []
-        #self._name = '<Unnammed>'
-        #self._types = ['Action']
-        #self._fullText = '<Blank>'
-        ##things the card can do when played
-        #self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
-#
-    #def play(self,extraData):
-        #self.move(self._pile.getOwner().getDeck().getField())
-        #self._specialActions(extraData)
-#
-    #def move(self,destPile):
-        #self._pile._cards.remove(self)
-        #destPile._cards.append(self)
-        #self._pile = destPile
-#
-    #def getPile(self):
-        #return self._pile
-#
-    #def getCost(self):
-        #return self._cost
-#
-    #def getName(self):
-        #return self._name
-#
-    #def getPrompts(self):
-        #return self._extraPrompts
-#
-    #def isType(self,type):
-        #return type in self._types
-#
-    #def getFullText(self):
-        #return self._fullText
-#
-    #def _specialActions(self,extraData):
-        #"""Dummy method that should be overridden in child classes who do 
-        #something other than cause the player to draw cards, gain money, gain 
-        #extra actions, or gain extra buys."""
-        #pass
-#
-    #@property
-    #def victoryPoints(self):
-        #return self._victoryPoints
-#
-    #@property
-    #def cost(self):
-        #return self._cost
 
 #Any pile of cards
 class pile(object):
