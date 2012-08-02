@@ -6,6 +6,8 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.protocols.basic import LineReceiver
 
+import os
+
 import argparse
 
 import getpass      #used to get logged in username
@@ -161,6 +163,9 @@ class TwistedDisplay(Display):
             #pass
         #else:
             #raise Exception(char)
+        
+        if os.name == 'nt':
+            reactor.callLater(0.01,self.doRead)
 
     def submit(self):       #handle the enter button press event
         client = self.client
@@ -288,7 +293,10 @@ def main(stdscr,args):
 
     factory = GameFactory(args.name,display)
 
-    reactor.addReader(display)
+    if os.name == 'nt':
+        reactor.callLater(0.01,display.doRead)
+    else:
+        reactor.addReader(display)
     reactor.connectTCP(args.address,args.port,factory)
     reactor.run()
 

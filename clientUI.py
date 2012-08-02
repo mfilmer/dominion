@@ -169,6 +169,7 @@ class Column(object):
 
         #Windows
         self._titleWindow = curses.newwin(1,width,row,col)
+        self._titleWindow.bkgd(' ',curses.color_pair(1))
         self._borderWindow = curses.newwin(1,width,row+1,col)
         self._borderWindow.hline(0,0,curses.ACS_HLINE,self._width)
         self._newPad(0)
@@ -343,6 +344,7 @@ class StatusColumn(Column):
         Column.__init__(self,(row,col),title,height,width)
         self._visibleRows -= 2
         self._statBar = curses.newwin(1,self._width,row+self._height-2,col)
+        self._statBar.bkgd(' ',curses.color_pair(1))
         self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
         self._statusBar = StatusBar((row+self._height-1,col),self._width)
 
