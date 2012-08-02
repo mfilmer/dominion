@@ -9,7 +9,6 @@ class Card(object):
         self._pile = startPile
         self._expansion = 'Base'
         self._storeSets = [] #money, starting kingdoms = 'Always'
-        self._victoryPoints = 0
         self._cost = 0
         self._playablePhases = [phase.action]
         self._extraPrompts = []
@@ -29,6 +28,18 @@ class Card(object):
         self._pile._cards.remove(self)
         destPile._cards.append(self)
         self._pile = destPile
+
+    def isWorking(self):
+        return self._isWorking
+
+    def inSet(self,setName):
+        return setName in self._storeSets
+
+    def getInitInventory(self):
+        return self._inventory
+
+    def getExpansion(self):
+        return self._expansion
 
     def getPile(self):
         return self._pile
@@ -350,6 +361,9 @@ class gardens(Card):
     @property
     def _victoryPoints(self):
         return len(self.getPile.getPlayer.getDeck)//10
+    @_victoryPoints.setter
+    def _victoryPoints(self,value):
+        pass
 
 #Cost: 4
 #Each other player discards down to 3 cards in his hand.
@@ -449,7 +463,7 @@ class spy(Card):
 #of these trashed cards. They discard the other revealed cards.
 class thief(Card):
     def __init__(self,pile):
-        Card.__init__(self)
+        Card.__init__(self,pile)
         self._name = 'Thief'
         self._cost = 4
         self._type = ['Action','Attack']

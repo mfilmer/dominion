@@ -192,7 +192,7 @@ class Player(LineReceiver):
                 protocol.sendLine('your turn')
                 protocol.phase = 'Action'
             else:
-                protocol.sendLine('turn: ' + name)
+                protocol.sendLine('turn: ' + currentPlayer)
 
 class GameFactory(Factory):
     def __init__(self,maxPlayers = 2):
@@ -235,6 +235,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--port',type=int,default=6814)
     parser.add_argument('-P','--players',type=int,default=2)
+    parser.add_argument('-s','--set',type=str,default='Working')
+    parser.add_argument('--workingCardsOnly',action='store_true',default=False)
     args = parser.parse_args()
     
     reactor.listenTCP(args.port,GameFactory(args.players))
