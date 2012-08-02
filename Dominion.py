@@ -22,7 +22,10 @@ class game(object):
         #create initial stores
         cardList = CardList()
 
-        self._stores = cardList.getCardsInSet('Always')
+        potentialStores = cardList.getCardsInSet('Always')
+        self._stores = [store(5,x,self) for x in potentialStores]
+
+        #self._stores = []
 
         #self._stores.append(store('inf',gold1,self))
         #self._stores.append(store('inf',gold2,self))

@@ -14,23 +14,24 @@ class CardList(object):
 
     def getCardByName(self,name):
         for card in cards:
-            if card(pile(None)).getName() == name:
+            if card(pile(self)).getName() == name:
                 return card
 
     def getCardsInSet(self,setName):
-        return [x for x in self._cards if x(pile(None)).inSet(setName)]
+        return [x for x in self._cards if x(pile(self)).inSet(setName)]
 
     def getCardsInExpansion(self,expName):
-        return [x for x in self._cards if x(pile(None)).getExpansion() == expName]
+        return [x for x in self._cards if x(pile(self)).getExpansion() \
+                == expName]
 
     def getWorkingCards(self):
-        return [x for x in self._cards if x(pile(None)).isWorking()]
+        return [x for x in self._cards if x(pile(self)).isWorking()]
 
     def _populate(self):
         self.add(gold1)
         self.add(gold2)
         self.add(gold3)
-        #self.add(gold5)
+        self.add(gold5)
         self.add(victory1)
         self.add(victory3)
         self.add(victory6)
