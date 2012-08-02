@@ -228,7 +228,8 @@ class Column(object):
         #clear marked rows
         self._maredRows = set()
         self._selectedRow = 0
-        self._touch(0)
+        if len(self._rowData) > 0:
+            self._touch(0)
         self.refresh()
 
     #navigation functions
@@ -363,7 +364,7 @@ class Display(object):
         self._borderWin.hline(self._termHeight-2,0,curses.ACS_HLINE,80)
         colHeight = self._termHeight - 4
         self._columns = ColList([Column((2,0),height=colHeight),\
-                Column((2,27),height=colHeight),\
+                StatusColumn((2,27),height=colHeight),\
                 Column((2,54),height=colHeight)],['Players','Mesg',None])
         #self._columns = [('Players',Column((2,0),height=self._termHeight-4)),\
                 #('Mesg',StatusColumn((2,27),height=self._termHeight-4)),\

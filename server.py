@@ -20,7 +20,6 @@ class Player(LineReceiver):
         self.name = None
         self.phase = 'New'
         self.player = None
-        self.turn = None
 
     def connectionMade(self):
         self.sendLine('name?')
@@ -90,8 +89,8 @@ class Player(LineReceiver):
 
     def advancePhase(self):
         if self.phase != 'Wait':
-            self.turn.advancePhase()
-            turn = self.turn
+            self.player.getTurn().advancePhase()
+            turn = self.player.getTurn()
             newTurn = False
             if turn.isPhase('Buy'):
                 newPhase = 'Buy'
@@ -112,7 +111,7 @@ class Player(LineReceiver):
         except ValueError:
             pass    #todo: send some kind of error message
         else:
-            self.turn.buy(store)
+            self.player.getTurn().buy(store)
             self.updatePiles(['Discard'])
             for name,protocol in self.users.iteritems():
                 protocol.updatePiles(['Store'])
@@ -128,7 +127,7 @@ class Player(LineReceiver):
             pass
         print('trying to play card: ' + cardName)
         try:
-            self.turn.play(card,extraData)
+            self.player.getTurn().play(card,extraData)
         except InvalidPhase: #not the correct phase to play this card
             print('invalid phase')
         except InsufficientActions: #not enough actions to play
@@ -173,8 +172,8 @@ class Player(LineReceiver):
         self.sendLine('what: ' + line)
 
     def newTurn(self):
-        self.turn = self.factory.game.next()
-        currentPlayer = self.turn.getPlayer().getName()
+        turn = self.factory.game.next()
+        currentPlayer = turn.getPlayer().getName()
         for name,protocol in self.factory.users.iteritems():
             protocol.updatePiles(['Hand'])
             if name == currentPlayer:
@@ -215,11 +214,9 @@ class GameFactory(Factory):
             if name == currentPlayerName:
                 protocol.sendLine('your turn')
                 protocol.phase = 'Action'
-                protocol.turn = turn
             else:
                 protocol.sendLine('turn: ' + currentPlayerName)
                 protocol.phase = 'Wait'
-                protocol.turn = Dominion.turn(Dominion.phase.wait)
 
 def main():
     parser = argparse.ArgumentParser()
