@@ -29,8 +29,10 @@ class GameClient(LineReceiver):
         elif line == 'okay':
             pass
         elif line == 'starting':
-            self.display._columns = [(['Hand','Field','Store'][i],\
-                    self.display._columns[i][1]) for i in range(3)]
+            self.display._columns = ColList([x[1] for x in \
+                    self.display._columns],['Hand','Field','Store'])
+            #self.display._columns = [(['Hand','Field','Store'][i],\
+                    #self.display._columns[i][1]) for i in range(3)]
             for func,col in self.display._columns:
                 col.setTitle(func)
             self.gameRunning = True
@@ -164,9 +166,8 @@ class TwistedDisplay(Display):
         client = self.client
         if client.gameRunning == True:
             #get selected column and its function
-            for function,column in self._columns:
-                if column == self._columns[self._currentCol][1]:
-                    break       #yeah, this actually does something
+            function = self._columns.getFunc()
+            column = self._columns.getCol()
             if client.myTurn:
                 if client.phase == 'Action':
                     if function == 'Hand':
@@ -192,12 +193,13 @@ class TwistedDisplay(Display):
 
     def getSelectedCardName(self):
         for func,col in self._columns:
-            if col == self._columns[self._colIndex]:
+            if col == self._columns.getCol():
                 break
         if func == 'Hand' or func == 'Field':
-            return self._columns[self._colIndex][1].getSelectedText().split()[1]
+            return self._columns.getCol().getSelectedText().split()[1]
+            #return self._columns[self._colIndex][1].getSelectedText().split()[1]
         elif func == 'Store':
-            return self._currentCol.getSelectedText().split()[2]
+            return self._columns.getCol().getSelectedText().split()[2]
         else:
             self.setStatus('You tried to select a card from a column with an '+\
                     'unrecognized function')
@@ -268,7 +270,7 @@ class TwistedDisplay(Display):
                 for i,row in enumerate(data):
                     if row[1:4] == 'inf':
                         data[i] = data[i][0:1] + '*' + data[i][4:]
-                column.setRowData(data)
+                column.setRowData(data,reset=False)
 
     #twisted stuff that is necessary but not really helpful
     def logPrefix(self): return 'CursesClient'

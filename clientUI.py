@@ -131,7 +131,9 @@ class ColList(object):
     def setCurrent(self,index):
         if index >= len(self._columns) or index < 0:
             raise ValueError
+        self._columns[self._index][1].setActive(False)
         self._index = index
+        self._columns[self._index][1].setActive(True)
 
     def isActive(self,index):
         return index == self._index
@@ -205,8 +207,14 @@ class Column(object):
 
     def setActive(self,state):
         self._isActive = bool(state)
+        if len(self._rowData) > 0:
+            if self._isActive:
+                self._touch(self._selectedRow)
+            else:
+                self._deselect(self._selectedRow)
+            self.refresh()
 
-    def setRowData(self,rowData,attrs=None):
+    def setRowData(self,rowData,attrs=None,reset=True):
         if attrs is None:
             attrs = [curses.color_pair(1)]*len(rowData)
         self._rowData = zip(rowData,attrs)
@@ -214,6 +222,12 @@ class Column(object):
         #clear the screen
         self._pad.erase()
         self.refresh()
+
+        #clear marked and selected rows
+        self._markedRows = set()
+        if reset:
+            self._selectedRow = 0
+            self._scrollOffset = 0
 
         #make a new pad
         del(self._pad)
@@ -225,11 +239,6 @@ class Column(object):
             else:
                 self._pad.addstr(i,0,text[0:self._width-1],attrs)
         
-        #clear marked rows
-        self._maredRows = set()
-        self._selectedRow = 0
-        if len(self._rowData) > 0:
-            self._touch(0)
         self.refresh()
 
     #navigation functions
@@ -280,7 +289,14 @@ class Column(object):
                 self._markedRows]
 
     def getSelectedText(self):
-        return self._rowData[self._selectedRow]
+        if len(self._rowData) == 0:
+            return ''
+        return self._rowData[self._selectedRow][0]
+
+    def getSelectedIndex(self):
+        if len(self._rowData) == 0:
+            return None
+        return self._selectedRow
 
     #implementation functions
     def _newPad(self,rows):
@@ -299,7 +315,7 @@ class Column(object):
 
     def _touch(self,row):
         self._verifyRow(row)
-        if row == self._selectedRow:
+        if row == self._selectedRow and self._isActive:
             self._pad.addstr(row,0,self._rowData[row][0], \
                     self._rowData[row][1] | curses.A_REVERSE)
         elif row in self._markedRows:
@@ -370,8 +386,7 @@ class Display(object):
                 #('Mesg',StatusColumn((2,27),height=self._termHeight-4)),\
                 #(None,Column((2,54),height=self._termHeight-4))]
         self._statusBar = StatusBar((self._termHeight-1,0))
-        self._colIndex = 0
-        self._columns[self._colIndex][1]._isActive = True
+        self._columns.setCurrent(0)
         self.refresh()
 
     def refresh(self):
@@ -382,22 +397,20 @@ class Display(object):
         self._statusBar.refresh()
 
     def scroll(self,lines=1):
-        self._columns[self._colIndex][1].scroll(lines)
+        self._columns.getCol().scroll(lines)
 
     def moveSelection(self,lines=1):
-        self._columns[self._colIndex][1].moveCursor(lines)
+        self._columns.getCol().moveCursor(lines)
 
     def changeColSelect(self,num):
         if num == 0:
             raise ValueError
-        start = self._colIndex
+        start = self._columns._index
         step = 1 if num > 0 else -1
         end = 2 if num > 0 else 0
         for i in range(start+step,end+step,step):
             if len(self._columns[i][1]) > 0:
-                self._colIndex = i
-                self._columns[start][1].setActive(False)
-                self._columns[self._colIndex][1].setActive(True)
+                self._columns.setCurrent(i)
                 break
 
     def setTitle(self,title):
@@ -406,8 +419,8 @@ class Display(object):
         self._titleWin.refresh()
 
     def toggleMark(self):
-        i = self._colIndex
-        self._columns[i][1].toggleMark(self._columns[i][1]._selectedRow)
+        col = self._columns.getCol()
+        col.toggleMark(col.getSelectedIndex())
 
     def getCh(self):
         return self._statusBar.getCh()

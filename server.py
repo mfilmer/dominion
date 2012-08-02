@@ -105,13 +105,16 @@ class Player(LineReceiver):
             if newTurn:
                 self.newTurn()
 
-    def buyCard(self,cardName): #todo: buy from the turn not the store
+    def buyCard(self,cardName):
         try:
             store = self.factory.game.getStoreByName(cardName)
         except ValueError:
             pass    #todo: send some kind of error message
         else:
-            self.player.getTurn().buy(store)
+            try:
+                self.player.getTurn().buy(store)
+            except:
+                pass    #todo: send some kind of error message
             self.updatePiles(['Discard'])
             for name,protocol in self.users.iteritems():
                 protocol.updatePiles(['Store'])
