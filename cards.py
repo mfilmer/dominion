@@ -7,12 +7,15 @@ class phase(object):
 class Card(object):
     def __init__(self,startPile):
         self._pile = startPile
+        self._expansion = 'Base'
+        self._storeSets = [] #money, starting kingdoms = 'Always'
         self._victoryPoints = 0
         self._cost = 0
         self._playablePhases = [phase.action]
         self._extraPrompts = []
         self._name = '<Unnammed>'
         self._types = ['Action']
+        self._isWorking = True
         self._fullText = '<Blank>'
         self._expansion = 'Base'
         #things the card can do when played
