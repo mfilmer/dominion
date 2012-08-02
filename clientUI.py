@@ -348,8 +348,8 @@ class StatusColumn(Column):
         self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
         self._statusBar = StatusBar((row+self._height-1,col),self._width)
 
-    def setStatus(self,status):
-        self._statusBar.setTempStatus(status)
+    def setStatus(self,status,attrs=None):
+        self._statusBar.setTempStatus(status,attrs)
 
     def refresh(self):
         Column.refresh(self)
@@ -363,9 +363,11 @@ class Display(object):
             curses.use_default_colors()
             curses.init_pair(1,-1,-1)
             curses.init_pair(2,4,-1)    #marked
+            curses.init_pair(3,1,-1)    #errors (red on white)
         elif curses.COLORS == 16:       #windows command prompt
             curses.init_pair(1,0,15)
             curses.init_pair(2,9,15)    #marked (blue on white)
+            curses.init_pair(3,6,15)    #marked
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
         self._stdscr.nodelay(True)
@@ -427,8 +429,11 @@ class Display(object):
     def getCh(self):
         return self._statusBar.getCh()
 
-    def setStatus(self,status):
-        self._statusBar.setStatus(status)
+    def setStatus(self,status,temp=False):
+        if temp:
+            self._statusBar.setTempStatus(status,curses.color_pair(3))
+        else:
+            self._statusBar.setStatus(status)
 
     def statusHistory(self,step):
         self._statusBar.scrollHistory(step)

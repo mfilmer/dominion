@@ -35,7 +35,7 @@ class GameClient(LineReceiver):
             #self.display._columns = [(['Hand','Field','Store'][i],\
                     #self.display._columns[i][1]) for i in range(3)]
             for func,col in self.display._columns:
-                col.setTitle(func)
+                col.setTitle(func,tAlign='Center')
             self.gameRunning = True
             self.display.setTitle('Dominion')
         elif line == 'your turn':
@@ -116,6 +116,7 @@ class TwistedDisplay(Display):
         self._store = []
         self._discard = []
         self.setTitle('Dominion - In Lobby')
+        self._columns.getCol(0).setTitle('Players',tAlign='Center')
 
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
@@ -158,9 +159,9 @@ class TwistedDisplay(Display):
                 self.statusHistory(-1)
         elif os.name == 'posix':
             if char == 337:   #shift up
-                self.statusHistory(-1)
-            elif char == 336:   #shift down
                 self.statusHistory(1)
+            elif char == 336:   #shift down
+                self.statusHistory(-1)
 
         #perhaps implement these two to allow horizontal scrolling in the status
         #bar area
@@ -203,7 +204,7 @@ class TwistedDisplay(Display):
                 elif client.phase == 'Wait':     
                     pass
             else:
-                self.setStatus('Wait until your turn')
+                self.setStatus('Wait until your turn',True)
 
     def getSelectedCardName(self):
         for func,col in self._columns:
@@ -240,7 +241,7 @@ class TwistedDisplay(Display):
                 B = '{0:<9}'.format('B:'+str(self._buys))
                 A = '{0:^8}'.format('A:'+str(self._actions))
                 M = '{0:>8}'.format('$:'+str(self._money))
-                col.setStatus(B+A+M)
+                col.setStatus(B+A+M,curses.color_pair(1)|curses.A_BOLD)
 
     def setStash(self,buys,actions,money):
         self._buys = buys

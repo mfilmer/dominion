@@ -104,11 +104,10 @@ class Player(LineReceiver):
             elif turn.isPhase('Wait'):
                 newPhase = 'Wait'
                 newTurn = True
-                self.updatePiles(['Field'])
             self.phase = newPhase
             for name,protocol in self.users.iteritems():
                 protocol.sendLine('phase: ' + newPhase)
-            self.updatePiles(['Hand'])
+            self.updatePiles(['Hand','Field'])
             self.updateStash()
             print(self.name + ' is now in the ' + newPhase + ' phase')
             if newTurn:
