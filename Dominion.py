@@ -10,7 +10,7 @@ from piles import *
 DEBUG = False
 
 class game(object):
-    def __init__(self,playerNames,onlyWorking=True):
+    def __init__(self,playerNames,onlyWorking=True,expansions=['Base']):
         self._players = []
         self._numPlayers = len(playerNames)
         self._lastPlayerID = 0
@@ -19,43 +19,21 @@ class game(object):
         self._playerNum = random.randint(0,self._numPlayers-1)
         self._currentPlayer = self._players[self._playerNum]
         self._trash = pile(self)
+
         #create initial stores
         cardList = CardList()
 
-        potentialStores = cardList.getCardsInSet('Always')
-        potentialStores.update(cardList.getCardsInExpansion('Base'))
-        potentialStores.intersection_update(cardList.getWorkingCards())
-        self._stores = [store(x(self).getInitInv(),x,self) for x in potentialStores]
-
-        #self._stores = []
-
-        #self._stores.append(store('inf',gold1,self))
-        #self._stores.append(store('inf',gold2,self))
-        #self._stores.append(store('inf',gold3,self))
-        #self._stores.append(store(8,victory1,self))
-        #self._stores.append(store(8,victory3,self))
-        #self._stores.append(store(8,victory6,self))
-        #self._stores.append(store('inf',curse,self))
-
-        #mode specific stores
-        #if mode == 'all':
-            #self._stores.append(store(10,village,self))
-            #self._stores.append(store(10,market,self))
-            #self._stores.append(store(10,smithy,self))
-            #self._stores.append(store(10,cellar,self))
-            #self._stores.append(store(10,moat,self))
-            #self._stores.append(store(10,militia,self))
-            #self._stores.append(store(10,woodcutter,self))
-            #self._stores.append(store(10,workshop,self))
-            #self._stores.append(store(10,remodel,self))
-            #self._stores.append(store(10,mine,self))
-            #self._stores.append(store('inf',councilRoom,self))
-            #self._stores.append(store('inf',adventurer,self))
-            #self._stores.append(store('inf',chapel,self))
-            #self._stores.append(store('inf',chancellor,self))
-            #self._stores.append(store('inf',moneylender,self))
-            #self._stores.append(store('inf',feast,self))
-            #self._stores.append(store('inf',witch,self))
+        expansions = ['Base','Intrigue']
+        potentialStores = set()
+        for exp in expansions:
+            potentialStores.update(cardList.getCardsInExpansion(exp))
+        if onlyWorking:
+            potentialStores.intersection_update(cardList.getWorkingCards())
+        potentialStores = list(potentialStores)
+        potentialStores = set(random.sample(potentialStores,10))
+        potentialStores.update(cardList.getCardsInSet('Always'))
+        self._stores = [store(x(self).getInitInv(),x,self) for x in \
+                potentialStores]
 
     def getPlayers(self):
         return self._players
