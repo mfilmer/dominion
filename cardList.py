@@ -19,6 +19,27 @@ class CardList(object):
                 break
         return testCard.getFullText()
 
+    def getCost(self,cardName):
+        for card in self._cards:
+            testCard = card(pile(self))
+            if testCard.getName() == cardName:
+                break
+        return testCard.getCost()
+
+    def getVictoryPoints(self,cardName):
+        for card in self._Cards:
+            testCard = card(pile(self))
+            if testCard.getName() == cardName:
+                break
+        return testCard.getVictoryPoints()
+
+    def getEffects(self,cardName):
+        for card in self._cards:
+            testCard = card(pile(self)):
+            if testCard.getName() == cardName:
+                break
+        return testCard.getEffects()
+
     def getCardByName(self,name):
         for card in cards:
             if card(pile(self)).getName() == name:

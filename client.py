@@ -12,6 +12,7 @@ import textwrap
 import os           #check what os we are on for the windows twisted hack
 import getpass      #used to get logged in username
 import argparse
+from ast import literal_eval    #safer than eval()
 
 class GameClient(LineReceiver):
     def __init__(self,factory,display):
@@ -46,17 +47,20 @@ class GameClient(LineReceiver):
             self.phase = 'Action'
         elif line[0:6] == 'data: ':
             if line[6:12] == 'hand: ':
-                self.display.hand = eval(line[12:])
+                self.display.hand = literal_eval(line[12:])
             elif line[6:13] == 'field: ':
-                self.display.field = eval(line[13:])
+                self.display.field = literal_eval(line[13:])
             elif line[6:15] == 'discard: ':
-                self.display.discard = eval(line[15:])
+                self.display.discard = literal_eval(line[15:])
             elif line[6:13] == 'store: ':
-                self.display.store = eval(line[13:])
+                self.display.store = literal_eval(line[13:])
             elif line[6:13] == 'stash: ':
                 self.display.setStash(*tuple(map(int,line[13:].split())))
             elif line[6:17] == 'full text: ':
-                self.display.displayFullText(line[17:])
+                try:        #for some reason this makes windows happy
+                    self.display.displayFullText(line[17:])
+                except:
+                    pass
             else:
                 self.unrecognizedServerRequest(line)
         elif line[0:6] == 'turn: ':

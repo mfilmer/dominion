@@ -373,15 +373,18 @@ class StatusColumn(Column):
 class Display(object):
     def __init__(self,stdscr):
         curses.curs_set(0)
-        if curses.COLORS == 8:          #gnome-terminal
-            curses.use_default_colors()
+        #color pair 1 -> Default colors, black on white
+        #color pair 2 -> Marked rows, blue on white
+        #color pair 3 -> Errors, red on white
+        if curses.COLORS == 8:          #this color set looks nice with my
+            curses.use_default_colors() #current gnome-terminal color settings
             curses.init_pair(1,-1,-1)
-            curses.init_pair(2,4,-1)    #marked
-            curses.init_pair(3,1,-1)    #errors (red on white)
-        elif curses.COLORS == 16:       #windows command prompt
-            curses.init_pair(1,0,15)
-            curses.init_pair(2,9,15)    #marked (blue on white)
-            curses.init_pair(3,6,15)    #marked
+            curses.init_pair(2,4,-1)
+            curses.init_pair(3,1,-1)
+        elif curses.COLORS == 16:       #these colors look nice in a default
+            curses.init_pair(1,0,15)    #windows command prompt
+            curses.init_pair(2,9,15)
+            curses.init_pair(3,12,15)
         stdscr.bkgd(' ',curses.color_pair(1))
         self._stdscr = stdscr
         self._stdscr.nodelay(True)

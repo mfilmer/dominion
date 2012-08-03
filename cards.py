@@ -52,6 +52,12 @@ class Card(object):
     def getName(self):
         return self._name
 
+    def getEffects(self):
+        return self._effects
+
+    def getVictoryPoints(self):
+        return self._victoryPoints
+
     def getPrompts(self):
         return self._extraPrompts
 

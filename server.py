@@ -211,6 +211,7 @@ class GameFactory(Factory):
         return Player(self,self.users,self.maxPlayers)
 
     def getFullText(self,cardName):
+        print('Getting full text for: ' + cardName)
         return self._cardList.getCardText(cardName)
 
     def startGame(self):
