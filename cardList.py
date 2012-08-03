@@ -35,7 +35,7 @@ class CardList(object):
 
     def getEffects(self,cardName):
         for card in self._cards:
-            testCard = card(pile(self)):
+            testCard = card(pile(self))
             if testCard.getName() == cardName:
                 break
         return testCard.getEffects()

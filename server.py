@@ -189,15 +189,19 @@ class Player(LineReceiver):
         self.sendLine('what: ' + line)
 
     def newTurn(self):
-        turn = self.factory.game.next()
-        currentPlayer = turn.getPlayer().getName()
-        for name,protocol in self.factory.users.iteritems():
-            protocol.updatePiles(['Hand'])
-            if name == currentPlayer:
-                protocol.sendLine('your turn')
-                protocol.phase = 'Action'
-            else:
-                protocol.sendLine('turn: ' + currentPlayer)
+        try:
+            turn = self.factory.game.next()
+        except StopIteration:
+            self.endGame()
+        else:
+            currentPlayer = turn.getPlayer().getName()
+            for name,protocol in self.factory.users.iteritems():
+                protocol.updatePiles(['Hand'])
+                if name == currentPlayer:
+                    protocol.sendLine('your turn')
+                    protocol.phase = 'Action'
+                else:
+                    protocol.sendLine('turn: ' + currentPlayer)
 
 class GameFactory(Factory):
     def __init__(self,args):
@@ -251,6 +255,13 @@ def main():
     parser.add_argument('--workingCardsOnly',action='store_true',default=True)
     parser.add_argument('-e','--expansions',nargs='*',default=['Base'])
     args = parser.parse_args()
+
+    print('Starting Server')
+    print('Card sets in use: ' + ', '.join(args.expansions))
+    if args.workingCardsOnly:
+        print('Only playing with working cards')
+    else:
+        print('Warning: non working cards may be in play')
 
     reactor.listenTCP(args.port,GameFactory(args))
     reactor.run()

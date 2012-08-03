@@ -10,6 +10,7 @@ from twisted.protocols.basic import LineReceiver
 import textwrap
 
 import os           #check what os we are on for the windows twisted hack
+os.putenv("ESCDELAY","25")  #also set ESCDELAY to 25ms
 import getpass      #used to get logged in username
 import argparse
 from ast import literal_eval    #safer than eval()
@@ -123,6 +124,7 @@ class TwistedDisplay(Display):
         self._field = []
         self._store = []
         self._discard = []
+        self._inPopup = False
         self.setTitle('Dominion - In Lobby')
         self._columns.getCol(0).setTitle('Players',tAlign='Center')
 
@@ -131,8 +133,7 @@ class TwistedDisplay(Display):
         if char == -1:          #no key was pressed
             pass
         elif char == 27:          #ESC key
-            #will eventually clear selection
-            pass
+            self.closePopUp()
         elif char == curses.KEY_NPAGE:
             self.scroll(1)
         elif char == curses.KEY_PPAGE:
@@ -228,6 +229,15 @@ class TwistedDisplay(Display):
         else:
             self.setStatus('You tried to select a card from a column with an '+\
                     'unrecognized function')
+
+    def popUp(self,rowData=[],title='',cursor=True):
+        popCol = PopupColumn((1,24),title=title,height=self._termHeight-3,\
+                width=32)
+        popCol.setRowData(rowData)
+        pass
+
+    def closePopUp(self):
+        self.refresh()
 
     def setClient(self,client):
         self.client = client

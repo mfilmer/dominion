@@ -390,6 +390,7 @@ class Display(object):
         self._stdscr.nodelay(True)
         self._termHeight = stdscr.getmaxyx()[0]
         self._titleWin = curses.newwin(1,80,0,0)
+        self._title = ''
         self._titleWin.bkgd(' ',curses.color_pair(1))
         #self._titleWin.addstr(0,0,'Dominion',curses.color_pair(1) | \
                 #curses.A_BOLD)
@@ -411,8 +412,14 @@ class Display(object):
         self.refresh()
 
     def refresh(self):
+        self._stdscr.erase()
+        self._stdscr.refresh()
+        self._borderWin.hline(1,0,curses.ACS_HLINE,80)
+        self._borderWin.vline(2,26,curses.ACS_VLINE,self._termHeight-4)
+        self._borderWin.vline(2,53,curses.ACS_VLINE,self._termHeight-4)
+        self._borderWin.hline(self._termHeight-2,0,curses.ACS_HLINE,80)
         self._borderWin.refresh()
-        self._titleWin.refresh()
+        self.setTitle()
         for func,col in self._columns:
             col.refresh()
         self._statusBar.refresh()
@@ -434,7 +441,11 @@ class Display(object):
                 self._columns.setCurrent(i)
                 break
 
-    def setTitle(self,title):
+    def setTitle(self,title=None):
+        if title is None:
+            title = self._title
+        else:
+            self._title = title
         self._titleWin.erase()
         self._titleWin.addstr(0,0,title,curses.color_pair(1) | curses.A_BOLD)
         self._titleWin.refresh()

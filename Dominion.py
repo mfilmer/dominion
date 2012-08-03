@@ -58,7 +58,15 @@ class game(object):
 
     #todo: implement
     def _isGameOver(self):
-        pass
+        count = 0
+        for store in self._stores:
+            if store.__len__() == 0:
+                if store.getName() == 'Province':
+                    return True
+                count += 1
+        if count >= 3:
+            return True
+        return False
 
     #iterate over each turn stopping when the game is over
     def next(self):
