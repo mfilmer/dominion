@@ -195,17 +195,20 @@ class Player(LineReceiver):
                 protocol.sendLine('turn: ' + currentPlayer)
 
 class GameFactory(Factory):
-    def __init__(self,maxPlayers = 2):
+    def __init__(self,args):
         self.users = {}
         self.game = None
-        self.maxPlayers = maxPlayers
+        self.maxPlayers = args.players
+        self._args = args
 
     def buildProtocol(self,addr):
         return Player(self,self.users,self.maxPlayers)
 
     def startGame(self):
         print('Starting Game...')
-        self.game = Dominion.game(self.users.keys())
+        self.game = Dominion.game(self.users.keys(),\
+                onlyWorking=self._args.workingCardsOnly,\
+                expansions=self._args.expansions)
         turn = self.game.next()
         players = self.game.getPlayers()
         stores = self.game.getStores()
@@ -235,11 +238,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--port',type=int,default=6814)
     parser.add_argument('-P','--players',type=int,default=2)
-    parser.add_argument('-s','--set',type=str,default='Working')
     parser.add_argument('--workingCardsOnly',action='store_true',default=False)
+    parser.add_argument('-e','--expansions',nargs='*',default=['Base'])
     args = parser.parse_args()
-    
-    reactor.listenTCP(args.port,GameFactory(args.players))
+
+    reactor.listenTCP(args.port,GameFactory(args))
     reactor.run()
 
 if __name__ == '__main__':

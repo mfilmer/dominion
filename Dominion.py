@@ -23,7 +23,6 @@ class game(object):
         #create initial stores
         cardList = CardList()
 
-        expansions = ['Base','Intrigue']
         potentialStores = set()
         for exp in expansions:
             potentialStores.update(cardList.getCardsInExpansion(exp))
