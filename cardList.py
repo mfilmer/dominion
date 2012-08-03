@@ -18,14 +18,14 @@ class CardList(object):
                 return card
 
     def getCardsInSet(self,setName):
-        return [x for x in self._cards if x(pile(self)).inSet(setName)]
+        return set([x for x in self._cards if x(pile(self)).inSet(setName)])
 
     def getCardsInExpansion(self,expName):
-        return [x for x in self._cards if x(pile(self)).getExpansion() \
-                == expName]
+        return set([x for x in self._cards if x(pile(self)).getExpansion() \
+                == expName])
 
     def getWorkingCards(self):
-        return [x for x in self._cards if x(pile(self)).isWorking()]
+        return set([x for x in self._cards if x(pile(self)).isWorking()])
 
     def _populate(self):
         self.add(gold1)

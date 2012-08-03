@@ -23,7 +23,9 @@ class game(object):
         cardList = CardList()
 
         potentialStores = cardList.getCardsInSet('Always')
-        self._stores = [store(5,x,self) for x in potentialStores]
+        potentialStores.update(cardList.getCardsInExpansion('Base'))
+        potentialStores.intersection_update(cardList.getWorkingCards())
+        self._stores = [store(x(self).getInitInv(),x,self) for x in potentialStores]
 
         #self._stores = []
 

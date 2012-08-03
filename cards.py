@@ -7,6 +7,7 @@ class phase(object):
 class Card(object):
     def __init__(self,startPile):
         self._pile = startPile
+        self._inventory = 10
         self._expansion = 'Base' #money, starting kingdoms = ''
         self._storeSets = [] #money, kingdoms = 'Always'; Col, Plat = 'Chance'
         self._victoryPoints = 0
@@ -36,7 +37,7 @@ class Card(object):
     def inSet(self,setName):
         return setName in self._storeSets
 
-    def getInitInventory(self):
+    def getInitInv(self):
         return self._inventory
 
     def getExpansion(self):
@@ -79,7 +80,7 @@ class Card(object):
 class gold1(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '40'
+        self._inventory = 40
         self._name = 'Copper'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -92,7 +93,7 @@ class gold1(Card):
 class gold2(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '30'
+        self._inventory = 30
         self._name = 'Silver'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -105,7 +106,7 @@ class gold2(Card):
 class gold3(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '30'
+        self._inventory = 30
         self._name = 'Gold'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -118,7 +119,7 @@ class gold3(Card):
 class gold5(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '12' 
+        self._inventory = 12 
         self._name = 'Platinum'
         self._expansion = ''
         self._storeSets = ['Chance']
@@ -133,7 +134,7 @@ class gold5(Card):
 class victory1(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '8' #depends on number of players
+        self._inventory = 8 #depends on number of players
         self._name = 'Estate'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -146,7 +147,7 @@ class victory1(Card):
 class victory3(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '8' #depends on number of players
+        self._inventory = 8 #depends on number of players
         self._name = 'Duchy'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -159,7 +160,7 @@ class victory3(Card):
 class victory6(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '8' #depends on number of players
+        self._inventory = 8 #depends on number of players
         self._name = 'Province'
         self._expansion = ''
         self._storeSets = ['Always']
@@ -172,7 +173,7 @@ class victory6(Card):
 class victory10(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '8' #depends on number of players
+        self._inventory = 8 #depends on number of players
         self._name = 'Colony'
         self._expansion = ''
         self._storeSets = ['Chance']
@@ -185,7 +186,7 @@ class victory10(Card):
 class curse(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '10' #depends on number of players
+        self._inventory = 10 #depends on number of players
         self._name = 'Curse'
         self._cost = 0
         self._victoryPoints = -1
@@ -373,7 +374,7 @@ class feast(Card):
 class gardens(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
-        self._inventory = '8' #depends on number of players
+        self._inventory = 8 #depends on number of players
         self._name = 'Gardens'
         self._cost = 4
         self._playablePhases = []
