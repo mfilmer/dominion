@@ -207,7 +207,7 @@ class cellar(Card):
         self._effects['actions'] = 1
         self._extraPrompts = ['Cards to Discard']
         self._fullText = 'Cost: 2\n+1 Action\nDiscard any number of cards.\n\
-        +1 Card per card discarded.'
++1 Card per card discarded.'
 
     def _specialActions(self,extraData):
         discardCards = map(str.strip,extraData[0].split(','))
@@ -268,8 +268,8 @@ class moat(Card):
         self._type = ['Action','Reaction']
         self._effects['cards'] = 2
         self._fullText = 'Cost: 2\n+2 Cards\n\
-        When another player plays an Attack card, you may reveal this \
-        from your hand. If you do, you are unaffected by that Attack.'
+When another player plays an Attack card, you may reveal this \
+from your hand. If you do, you are unaffected by that Attack.'
 
         #todo: check the phase and act accordingly
 
@@ -280,8 +280,8 @@ class chancellor(Card):
         self._cost = 2
         self._effects['money'] = 2
         self._extraPrompts = ['Put deck in discard pile [y/n]']
-        self._fullText = 'Cost: 3\n+$2\n\
-        You may immediately put your deck into your discard pile.'
+        self._fullText = 'Cost: 3\n+$2\n \
+You may immediately put your deck into your discard pile.'
 
     def _specialActions(self,extraData):
         response = map(str.strip,extraData[0].split(','))[0].lower()
@@ -346,8 +346,8 @@ class bureaucrat(Card):
         self._cost = 4
         self._types = ['Action','Attack']
         self._fullText = 'Cost: 4\nGain a silver card; put it on top of your \
-        deck. Each other player reveals a Victory card from his hand and puts \
-        it on his deck (or reveals a hand with no Victory cards).'
+deck. Each other player reveals a Victory card from his hand and puts \
+it on his deck (or reveals a hand with no Victory cards).'
 
 class feast(Card):
     def __init__(self,pile):
@@ -357,7 +357,7 @@ class feast(Card):
         self._isWorking = False
         self._extraPrompts = ['Card to Gain']
         self._fullText = 'Cost: 4\nTrash this card. Gain a card costing up to \
-        $5'
+$5'
 
     def _specialActions(self,extraData):
         cardsToGain = map(str.strip,extraData[0].split(','))
@@ -381,7 +381,7 @@ class gardens(Card):
         self._cost = 4
         self._playablePhases = []
         self._fullText = 'Cost: 4\nWorth 1 VP for every 10 cards in your deck \
-        (rounded down)'
+(rounded down)'
     
     @property
     def _victoryPoints(self):
@@ -399,7 +399,7 @@ class militia(Card):
         self._cost = 4
         self._effects['money'] = 2
         self._fullText = 'Cost: 4\n+$2\nEach other player discards down to 3 \
-                cards in his hand.'
+cards in his hand.'
 
 class moneylender(Card):
     def __init__(self,pile):
@@ -408,7 +408,7 @@ class moneylender(Card):
         self._cost = 4
         self._isWorking = False
         self._fullText = 'Cost: 4\nTrash a Copper from your hand. If you do, \
-                +$3'
++$3'
 
     def _specialActions(self,extraData=[]):
         player = self._pile.getOwner()
@@ -430,7 +430,7 @@ class remodel(Card):
         self._cost = 4
         self._extraPrompts = ['Card to Trash','Card to Gain']
         self._fullText = 'Cost: 4\nTrash a card from your hand. Gain a card \
-        costing up to $2 more than the trashed card'
+costing up to $2 more than the trashed card'
 
     def _specialActions(self,extraData):
         cardsToTrash = map(str.strip,extraData[0].split(','))
@@ -473,7 +473,7 @@ class spy(Card):
         self._effects['cards'] = 1
         self._effects['actions'] = 1
         self._fullText = 'Cost: 4\nEach player (including you) reveals the \
-        top card of his deck and either discards it or puts it back, your choice'
+top card of his deck and either discards it or puts it back, your choice'
 
 class thief(Card):
     def __init__(self,pile):
@@ -483,9 +483,9 @@ class thief(Card):
         self._cost = 4
         self._type = ['Action','Attack']
         self._fullText = 'Cost: 4\n Each other player reveals the top 2 cards \
-        of his deck. If they revealed any Treasure cards, they trash one of \
-        them that you choose. You may gain any or all of these trashed cards. \
-        They discard the other revealed cards.'
+of his deck. If they revealed any Treasure cards, they trash one of \
+them that you choose. You may gain any or all of these trashed cards. \
+They discard the other revealed cards.'
 
 class throneRoom(Card):
     def __init__(self,pile):
@@ -494,7 +494,7 @@ class throneRoom(Card):
         self._isWorking = False
         self._cost = 4
         self._fullText = 'Cost: 4\n Choose an Action card in your hand. Play \
-                it twice'
+it twice'
 
 class councilRoom(Card):
     def __init__(self,pile):
@@ -504,7 +504,7 @@ class councilRoom(Card):
         self._effects['cards'] = 4
         self._effects['buys'] = 1
         self._fullText = 'Cost: 5\n+4 cards\n+1 buy\nEach other player draws a \
-        card'
+card'
         
     def _specialActions(self,extraData=[]):
         owner = self._pile.getOwner()
@@ -539,8 +539,8 @@ class library(Card):
         self._isWorking = False
         self._cost = 5
         self._fullText = 'Cost: 5\nDraw until you have 7 cards in hand. You \
-                may set aside any Action cards drawn this way, as you draw \
-                them; discard the set aside cards after you finish drawing.'
+may set aside any Action cards drawn this way, as you draw \
+them; discard the set aside cards after you finish drawing.'
 
 class market(Card):
     def __init__(self,pile):
@@ -562,7 +562,7 @@ class mine(Card):
         self._cost = 5
         self._extraPrompts = ['Card to Trash']
         self._fullText = 'Cost: 5\nTrash a Treasure card from your hand. Gain \
-        a Treasure card costing up to $3 more; put it into your hand.'
+a Treasure card costing up to $3 more; put it into your hand.'
 
     def _specialActions(self,extraData):
         cardsToTrash = map(str.strip,extraData[0].split(','))
@@ -597,7 +597,7 @@ class witch(Card):
         self._type = ['Action','Attack']
         self._effects['cards'] = 2
         self._fullText = 'Cost: 5\n+2 cards\nEach other player gains a Curse \
-                card'
+card'
 
     def _specialActions(self,extraData=[]):
         owner = self._pile.getOwner()
@@ -613,8 +613,8 @@ class adventurer(Card):
         self._name = 'Adventurer'
         self._cost = 6
         self._fullText = 'Cost: 6\nReveal cards from your deck until you \
-                reveal 2 Treasure cards. Put those Treasure cards in your hand \
-                and discard the other revealed cards'
+reveal 2 Treasure cards. Put those Treasure cards in your hand \
+and discard the other revealed cards'
 
     def _specialActions(self,extraData=[]):
         deck = self._pile.getOwner().getDeck()
@@ -649,7 +649,7 @@ class courtyard(Card):
         self._effects['cards'] = 3
         self._expansion = 'Intrigue'
         self._fullText = 'Cost: 2\n+3 cards\nPut a card from your hand on top \
-        of your deck'
+of your deck'
         ### needs help
        
 class pawn(Card):
@@ -661,7 +661,7 @@ class pawn(Card):
         self._extraPrompts = ['Choose two']
         self._expansion = 'Intrigue'
         self._fullText = 'Cost: 2\nChoose two: +1 Card; +1 Action; +1 Buy; \
-        +$1. (The choices must be different.)'
++$1. (The choices must be different.)'
         ### needs help
       
 class secretChamber(Card):
@@ -674,9 +674,9 @@ class secretChamber(Card):
         self._type = ['Action','Reaction']
         self._extraPrompts = ['Discard any number of cards']
         self._fullText = 'Discard any number of cards. +1$ per card discarded.\
-         When another player plays an Attack card, you may reveal this from \
-         your hand. If you do, +2 cards, then put 2 cards from your hand on \
-         top of your deck.'
+When another player plays an Attack card, you may reveal this from \
+your hand. If you do, +2 cards, then put 2 cards from your hand on \
+top of your deck.'
          ### needs help
     
 class greatHall(Card):
@@ -700,7 +700,7 @@ class masquerade(Card):
         self._effects['cards'] = 2
         self._extraPrompts = ['Trash a card:']
         self._fullText = '+2 cards\nEach player passes a card in their hand \
-        to the player on their left. You may trash a card from your hand.'
+to the player on their left. You may trash a card from your hand.'
         ### needs help
 
 class shantyTown(Card):
@@ -711,7 +711,7 @@ class shantyTown(Card):
         self._cost = 3
         self._effects['actions'] = 2
         self._fullText = '+2 actions\nReveal your hand. If you have no action \
-        cards in hand, +2 cards.'
+cards in hand, +2 cards.'
         ### needs help
         
 class swindler(Card):
@@ -723,7 +723,7 @@ class swindler(Card):
         self._type = ['Action','Attack']
         self._effects['money'] = 2
         self._fullText = '+2$\nEach other player trashes the top card of his \
-        deck and gains a card with the same cost that you choose.'
+deck and gains a card with the same cost that you choose.'
         ### needs help
         
 class wishingWell(Card):
@@ -736,5 +736,5 @@ class wishingWell(Card):
         self._effects['cards'] = 1
         self._extraPrompts = ['Name a card']
         self._fullText = '+1 card\n+1 action\nName a card, then reveal the \
-        top card of your deck. If it is the named card, put it in your hand.'
+top card of your deck. If it is the named card, put it in your hand.'
         ### needs help

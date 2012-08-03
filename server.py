@@ -11,6 +11,7 @@ from errors import *
 import argparse
 
 import Dominion
+from cardList import CardList
 
 class Player(LineReceiver):
     def __init__(self,factory,users,maxPlayers=2):
@@ -159,6 +160,10 @@ class Player(LineReceiver):
         elif self.phase == 'InLobby':
             #perhaps this is a chat message. implement later
             self.unrecognizedClientRequest(line) 
+        elif line[0:5] == 'get: ':
+            if line[5:16] == 'full text: ':
+                fullText = self.factory.getFullText(line[16:])
+                self.sendLine('data: full text: ' + fullText)
         elif self.phase == 'Action':
             if line[0:6] == 'play: ':
                 self.playCard(line[6:])
@@ -200,9 +205,13 @@ class GameFactory(Factory):
         self.game = None
         self.maxPlayers = args.players
         self._args = args
+        self._cardList = CardList()
 
     def buildProtocol(self,addr):
         return Player(self,self.users,self.maxPlayers)
+
+    def getFullText(self,cardName):
+        return self._cardList.getCardText(cardName)
 
     def startGame(self):
         print('Starting Game...')
@@ -238,7 +247,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p','--port',type=int,default=6814)
     parser.add_argument('-P','--players',type=int,default=2)
-    parser.add_argument('--workingCardsOnly',action='store_true',default=False)
+    parser.add_argument('--workingCardsOnly',action='store_true',default=True)
     parser.add_argument('-e','--expansions',nargs='*',default=['Base'])
     args = parser.parse_args()
 

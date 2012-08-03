@@ -339,6 +339,20 @@ class Column(object):
     def __len__(self):
         return len(self._rowData)
 
+class PopupColumn(Column):
+    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+        Column.__init__(self,(row,col),title,height,width)
+        #base column
+        self._isActive = True
+        self._outlineWindow = curses.newwin(height+2,width+2,row-1,col-1)
+        self._outlineWindow.bkgd(' ',curses.color_pair(3))
+        self._outlineWindow.border()
+        self.refresh()
+
+    def refresh(self):
+        self._outlineWindow.refresh()
+        Column.refresh(self)
+
 class StatusColumn(Column):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         Column.__init__(self,(row,col),title,height,width)

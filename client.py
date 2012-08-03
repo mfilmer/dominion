@@ -7,6 +7,8 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory
 from twisted.protocols.basic import LineReceiver
 
+import textwrap
+
 import os           #check what os we are on for the windows twisted hack
 import getpass      #used to get logged in username
 import argparse
@@ -53,6 +55,8 @@ class GameClient(LineReceiver):
                 self.display.store = eval(line[13:])
             elif line[6:13] == 'stash: ':
                 self.display.setStash(*tuple(map(int,line[13:].split())))
+            elif line[6:17] == 'full text: ':
+                self.display.displayFullText(line[17:])
             else:
                 self.unrecognizedServerRequest(line)
         elif line[0:6] == 'turn: ':
@@ -150,6 +154,8 @@ class TwistedDisplay(Display):
             #will eventually switch between different player's screens
             pass
         elif char == ord('?'):
+            cardName = self.getSelectedCardName()
+            self.client.sendLine('get: full text: ' + cardName)
             #will eventually give card info
             pass
         elif os.name == 'nt':
@@ -248,6 +254,11 @@ class TwistedDisplay(Display):
         self._actions = actions
         self._money = money
         self.updateStashBar()
+
+    def displayFullText(self,fullText):
+        tempCol = PopupColumn((1,24),title='Full Text',\
+                height=self._termHeight-3,width=32)
+        tempCol.setRowData(textwrap.wrap(fullText,31))
 
     @property
     def hand(self):

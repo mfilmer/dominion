@@ -12,6 +12,13 @@ class CardList(object):
     def remove(self,card):
         self._cards.remove(card)
 
+    def getCardText(self,cardName):
+        for card in self._cards:
+            testCard = card(pile(self))
+            if testCard.getName() == cardName:
+                break
+        return testCard.getFullText()
+
     def getCardByName(self,name):
         for card in cards:
             if card(pile(self)).getName() == name:

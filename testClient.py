@@ -33,11 +33,8 @@ class TheClient(Display):
         elif char == ord('n'):
             self.setStatus('advance phase')
         elif char == ord('a'):
-            self.setStatus('this is a test of the emergency broadcast system'\
-                    +' this is only a test, fear not, it is only a test')
-        elif char == ord('o'):
-            self.setStatus('now we are planning on saying more random stuff'\
-                    +' such as the quick brown fox jumps over the lazy dog')
+            theCol = PopupColumn((1,24),title='Ahh',height=21,width=32)
+            theCol.setRowData(['row: ' + str(x) for x in range(20)])
         elif char == ord('q'):
             return True
         elif char == ord(' '):
