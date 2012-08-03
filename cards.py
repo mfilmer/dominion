@@ -188,6 +188,8 @@ class curse(Card):
         Card.__init__(self,pile)
         self._inventory = 10 #depends on number of players
         self._name = 'Curse'
+        self._expansion = ''
+        self._storeSets = ['Always']
         self._cost = 0
         self._victoryPoints = -1
         self._playablePhases = []
