@@ -359,16 +359,22 @@ class StatusColumn(Column):
         self._visibleRows -= 2
         self._statBar = curses.newwin(1,self._width,row+self._height-2,col)
         self._statBar.bkgd(' ',curses.color_pair(1))
-        self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
         self._statusBar = StatusBar((row+self._height-1,col),self._width)
+        self._status = '',1
 
-    def setStatus(self,status,attrs=None):
-        self._statusBar.setTempStatus(status,attrs)
+    def setStatus(self,status=None,attrs=None):
+        if status is None:
+            status,attrs = self._status
+        else:
+            self._status = (status,attrs)
+        self._statusBar.setTempStatus(*self._status)
 
     def refresh(self):
         Column.refresh(self)
-        self._statusBar.refresh()
+        self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
+        self.setStatus()
         self._statBar.refresh()
+        self._statusBar.refresh()
 
 class Display(object):
     def __init__(self,stdscr):
