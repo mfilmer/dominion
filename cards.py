@@ -1,3 +1,5 @@
+from piles import pile
+
 class phase(object):
     action = 0
     buy = 1
@@ -18,7 +20,6 @@ class Card(object):
         self._types = ['Action']
         self._isWorking = True
         self._fullText = '<Blank>'
-        self._expansion = 'Base'
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
@@ -42,6 +43,9 @@ class Card(object):
 
     def getExpansion(self):
         return self._expansion
+
+    def inStoreSet(self,storeSetName):
+        return storeSetName in self._storeSets
 
     def getPile(self):
         return self._pile

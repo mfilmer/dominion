@@ -48,6 +48,9 @@ class CardList(object):
     def getCardsInSet(self,setName):
         return set([x for x in self._cards if x(pile(self)).inSet(setName)])
 
+    def getCardsInStoreSet(self,setName):
+        pass
+
     def getCardsInExpansion(self,expName):
         return set([x for x in self._cards if x(pile(self)).getExpansion() \
                 == expName])
