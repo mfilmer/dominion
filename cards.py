@@ -1,5 +1,3 @@
-from piles import pile
-
 class phase(object):
     action = 0
     buy = 1

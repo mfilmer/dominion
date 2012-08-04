@@ -91,7 +91,7 @@ class CardList(object):
         self.add(market)
         self.add(mine)
         self.add(witch)
-        self.add(adventurer)
+        #self.add(adventurer)
         self.add(courtyard)
         self.add(pawn)
         self.add(secretChamber)
