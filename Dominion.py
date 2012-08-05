@@ -10,7 +10,8 @@ from piles import *
 DEBUG = False
 
 class game(object):
-    def __init__(self,playerNames,onlyWorking=True,expansions=['Base']):
+    def __init__(self,playerNames,onlyWorking=True,expansions=['Base'],\
+            useChance=False):
         self._players = []
         self._numPlayers = len(playerNames)
         self._lastPlayerID = 0
@@ -30,7 +31,9 @@ class game(object):
             potentialStores.intersection_update(cardList.getWorkingCards())
         potentialStores = list(potentialStores)
         potentialStores = set(random.sample(potentialStores,10))
-        potentialStores.update(cardList.getCardsInSet('Always'))
+        potentialStores.update(cardList.getCardsInStoreSet('Always'))
+        if useChance:
+            potentialStores.update(cardList.getCardsInStoreSet('Chance'))
         self._stores = [store(x(self).getInitInv(),x,self) for x in \
                 potentialStores]
 

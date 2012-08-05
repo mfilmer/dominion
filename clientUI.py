@@ -380,18 +380,31 @@ class StatusColumn(Column):
         self._statBar.refresh()
         self._statusBar.refresh()
 
-class YesNoWindow(object):
+class PopupWindow(object):
+    def __init__(self):
+        pass
+
+    def selectionVertical(self,step):
+        pass
+
+    def selectionHorizontal(self,step):
+        pass
+
+    def refresh():
+        pass
+
+class YesNoWindow(PopupWindow):
     def __init__(self,choices):
         if len(choices) != 2:
             raise ValueError
 
-class SelectionDialogue(Column):
+class SelectionDialogue(PopupWindow,Column):
     def __init__(self,choices):
         if len(choices) < 2:
             raise ValueError
         Column.__init__(self)
 
-class MultiSelectionDialogue(StatusColumn):
+class MultiSelectionDialogue(PopupWindow,StatusColumn):
     def __init__(self,choices):
         if len(choices) < 2:
             raise ValueError

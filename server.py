@@ -9,6 +9,7 @@ from twisted.internet import reactor
 from errors import *
 
 import argparse
+import random
 
 import Dominion
 from cardList import CardList
@@ -204,12 +205,13 @@ class Player(LineReceiver):
                     protocol.sendLine('turn: ' + currentPlayer)
 
 class GameFactory(Factory):
-    def __init__(self,args):
+    def __init__(self,args,chanceCards):
         self.users = {}
         self.game = None
         self.maxPlayers = args.players
         self._args = args
         self._cardList = CardList()
+        self._chanceCards = chanceCards
 
     def buildProtocol(self,addr):
         return Player(self,self.users,self.maxPlayers)
@@ -220,9 +222,13 @@ class GameFactory(Factory):
 
     def startGame(self):
         print('Starting Game...')
+        chance = False
+        if random.randint(0,1) == 0:
+            print('Playing with chance cards')
+            chance = True
         self.game = Dominion.game(self.users.keys(),\
                 onlyWorking=self._args.workingCardsOnly,\
-                expansions=self._args.expansions)
+                expansions=self._args.expansions,useChance=self._chanceCards)
         turn = self.game.next()
         players = self.game.getPlayers()
         stores = self.game.getStores()
@@ -263,7 +269,12 @@ def main():
     else:
         print('Warning: non working cards may be in play')
 
-    reactor.listenTCP(args.port,GameFactory(args))
+    chanceCards = False
+    if random.randint(0,9) == 0:
+        chanceCards = True
+        print('Playing with chance cards')
+
+    reactor.listenTCP(args.port,GameFactory(args,chanceCards))
     reactor.run()
 
 if __name__ == '__main__':

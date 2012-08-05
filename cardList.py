@@ -47,18 +47,15 @@ class CardList(object):
             if card(Pile(self)).getName() == name:
                 return card
 
-    def getCardsInSet(self,setName):
-        return set([x for x in self._cards if x(Pile(self)).inSet(setName)])
-
     def getCardsInStoreSet(self,setName):
-        pass
+        return [x for x in self._cards if x(Pile(self)).inSet(setName)]
 
     def getCardsInExpansion(self,expName):
-        return set([x for x in self._cards if x(Pile(self)).getExpansion() \
-                == expName])
+        return [x for x in self._cards if x(Pile(self)).getExpansion() \
+                == expName]
 
     def getWorkingCards(self):
-        return set([x for x in self._cards if x(Pile(self)).isWorking()])
+        return [x for x in self._cards if x(Pile(self)).isWorking()]
 
     def _populate(self):
         self.add(gold1)
@@ -68,6 +65,7 @@ class CardList(object):
         self.add(victory1)
         self.add(victory3)
         self.add(victory6)
+        self.add(victory10)
         self.add(curse)
         self.add(cellar)
         self.add(chapel)
