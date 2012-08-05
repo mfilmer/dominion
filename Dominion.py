@@ -18,7 +18,7 @@ class game(object):
             self._players.append(player(self,playerNames[i]))
         self._playerNum = random.randint(0,self._numPlayers-1)
         self._currentPlayer = self._players[self._playerNum]
-        self._trash = pile(self)
+        self._trash = Pile(self)
 
         #create initial stores
         cardList = CardList()

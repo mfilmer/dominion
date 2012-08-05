@@ -219,7 +219,7 @@ class cellar(Card):
 
     def _specialActions(self,extraData):
         discardCards = map(str.strip,extraData[0].split(','))
-        tmpPile = pile(self)
+        tmpPile = Pile(self)
         deck = self._pile.getOwner().getDeck()
         hand = deck.getHand()
         discard = deck.getDiscard()
@@ -250,7 +250,7 @@ class chapel(Card):
         trashCards = map(str.strip,extraData[0].split(','))
         if len(trashCards) > 4:
             raise ValueError
-        tmpPile = pile(self)
+        tmpPile = Pile(self)
         deck = self._pile.getOwner().getDeck()
         hand = deck.getHand()
         trash = self._pile.getOwner().getGame().getTrash()
@@ -286,6 +286,7 @@ class chancellor(Card):
         Card.__init__(self,pile)
         self._name = 'Chancellor'
         self._cost = 2
+        self._isWorking = False
         self._effects['money'] = 2
         self._extraPrompts = ['Put deck in discard pile [y/n]']
         self._fullText = 'Cost: 3\n+$2\n \
@@ -629,7 +630,7 @@ and discard the other revealed cards'
         library = deck.getLibrary()
         discard = deck.getDiscard()
         hand = deck.getHand()
-        tmpPile = pile(self)
+        tmpPile = Pile(self)
         
         while tmpPile.countCardsByType('Treasure') < 2:
             if len(library) == 0:

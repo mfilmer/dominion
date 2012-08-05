@@ -1,8 +1,7 @@
-from cards import Card
 import random
 
 #Any pile of cards
-class pile(object):
+class Pile(object):
     def __init__(self,owner):
         self._cards = []
         self._owner = owner
@@ -67,12 +66,12 @@ class pile(object):
                 return True
         return False
 
-class store(pile):
+class store(Pile):
     """Stores are special piles that you can only take from and not ever add to.
     They represent the cards that players can purchase. Once purchased, a card
     is (usually) moved from the store to the player's discard pile."""
     def __init__(self,count,newCard,owner):
-        pile.__init__(self,owner)
+        Pile.__init__(self,owner)
         self._inf = False
         self._newCard = newCard
         if float(count) == float('inf'):
@@ -98,7 +97,7 @@ class store(pile):
     def getName(self):
         return self._name
 
-    def addNew(self,newCard=Card):
+    def addNew(self,newCard=None):
         raise Exception('cards cannot be added to a store')
 
     def __len__(self):
@@ -107,13 +106,13 @@ class store(pile):
         else:
             return len(self._cards)
 
-class deck(pile):
+class deck(Pile):
     def __init__(self,player):
         self._player = player
-        self._discard = pile(player)
-        self._hand = pile(player)
-        self._library = pile(player)
-        self._field = pile(player)
+        self._discard = Pile(player)
+        self._hand = Pile(player)
+        self._library = Pile(player)
+        self._field = Pile(player)
         self._owner = player
         self._extraPrompts = []
 

@@ -1,4 +1,4 @@
-from piles import pile
+from piles import Pile
 from cards import *
 
 class CardList(object):
@@ -14,49 +14,49 @@ class CardList(object):
 
     def getCardText(self,cardName):
         for card in self._cards:
-            testCard = card(pile(self))
+            testCard = card(Pile(self))
             if testCard.getName() == cardName:
                 break
         return testCard.getFullText()
 
     def getCost(self,cardName):
         for card in self._cards:
-            testCard = card(pile(self))
+            testCard = card(Pile(self))
             if testCard.getName() == cardName:
                 break
         return testCard.getCost()
 
     def getVictoryPoints(self,cardName):
         for card in self._Cards:
-            testCard = card(pile(self))
+            testCard = card(Pile(self))
             if testCard.getName() == cardName:
                 break
         return testCard.getVictoryPoints()
 
     def getEffects(self,cardName):
         for card in self._cards:
-            testCard = card(pile(self))
+            testCard = card(Pile(self))
             if testCard.getName() == cardName:
                 break
         return testCard.getEffects()
 
     def getCardByName(self,name):
         for card in cards:
-            if card(pile(self)).getName() == name:
+            if card(Pile(self)).getName() == name:
                 return card
 
     def getCardsInSet(self,setName):
-        return set([x for x in self._cards if x(pile(self)).inSet(setName)])
+        return set([x for x in self._cards if x(Pile(self)).inSet(setName)])
 
     def getCardsInStoreSet(self,setName):
         pass
 
     def getCardsInExpansion(self,expName):
-        return set([x for x in self._cards if x(pile(self)).getExpansion() \
+        return set([x for x in self._cards if x(Pile(self)).getExpansion() \
                 == expName])
 
     def getWorkingCards(self):
-        return set([x for x in self._cards if x(pile(self)).isWorking()])
+        return set([x for x in self._cards if x(Pile(self)).isWorking()])
 
     def _populate(self):
         self.add(gold1)
@@ -91,7 +91,7 @@ class CardList(object):
         self.add(market)
         self.add(mine)
         self.add(witch)
-        #self.add(adventurer)
+        self.add(adventurer)
         self.add(courtyard)
         self.add(pawn)
         self.add(secretChamber)

@@ -209,7 +209,7 @@ class TwistedDisplay(Display):
                         name = self.getSelectedCardName()
                         client.sendLine('play: ' + name)
                     else:
-                        self.setStatus('Invalid choice')
+                        self.setStatus('Invalid choice',True)
                 elif client.phase == 'Cleanup':
                     pass
                 elif client.phase == 'Wait':     
