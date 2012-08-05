@@ -17,6 +17,8 @@ class CardList(object):
             testCard = card(Pile(self))
             if testCard.getName() == cardName:
                 break
+        else:
+            raise ValueError
         return testCard.getFullText()
 
     def getCost(self,cardName):

@@ -222,10 +222,10 @@ class TwistedDisplay(Display):
             if col == self._columns.getCol():
                 break
         if func == 'Hand' or func == 'Field':
-            return self._columns.getCol().getSelectedText().split()[1]
+            return self._columns.getCol().getSelectedText().split(' ',1)[1]
             #return self._columns[self._colIndex][1].getSelectedText().split()[1]
         elif func == 'Store':
-            return self._columns.getCol().getSelectedText().split()[2]
+            return self._columns.getCol().getSelectedText().split(' ',2)[2]
         else:
             self.setStatus('You tried to select a card from a column with an '+\
                     'unrecognized function')
