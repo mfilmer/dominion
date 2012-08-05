@@ -132,6 +132,8 @@ class TwistedDisplay(Display):
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
         if char == -1:          #no key was pressed
+            if os.name == 'nt':
+                reactor.callLater(0.01,self.doRead)
             return
 
         if self._popupWindow is not None:
