@@ -380,6 +380,23 @@ class StatusColumn(Column):
         self._statBar.refresh()
         self._statusBar.refresh()
 
+class YesNoWindow(object):
+    def __init__(self,choices):
+        if len(choices) != 2:
+            raise ValueError
+
+class SelectionDialogue(Column):
+    def __init__(self,choices):
+        if len(choices) < 2:
+            raise ValueError
+        Column.__init__(self)
+
+class MultiSelectionDialogue(StatusColumn):
+    def __init__(self,choices):
+        if len(choices) < 2:
+            raise ValueError
+        Column.__init__(self)
+
 class Display(object):
     def __init__(self,stdscr):
         curses.curs_set(0)

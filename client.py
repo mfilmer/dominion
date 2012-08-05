@@ -118,6 +118,7 @@ class GameFactory(ClientFactory):
 
 class TwistedDisplay(Display):
     def __init__(self,stdscr):
+        self._popupWindow = None
         Display.__init__(self,stdscr)
         self._playerList = []
         self._hand = []
@@ -131,9 +132,12 @@ class TwistedDisplay(Display):
     def doRead(self):           #called by twisted's reactor
         char = self.getCh()
         if char == -1:          #no key was pressed
+            return
+
+        if self._popupWindow is not None:
+            self.handlePopupKey(char)
+        elif char == 27:            #ESC key
             pass
-        elif char == 27:          #ESC key
-            self.closePopUp()
         elif char == curses.KEY_NPAGE:
             self.scroll(1)
         elif char == curses.KEY_PPAGE:
@@ -161,8 +165,6 @@ class TwistedDisplay(Display):
         elif char == ord('?'):
             cardName = self.getSelectedCardName()
             self.client.sendLine('get: full text: ' + cardName)
-            #will eventually give card info
-            pass
         elif os.name == 'nt':
             if char == 547:   #shift up (windows)
                 self.statusHistory(1)
@@ -217,6 +219,11 @@ class TwistedDisplay(Display):
             else:
                 self.setStatus('Wait until your turn',True)
 
+    def handlePopupKey(self,char):
+        if char == 27:          #ESC key
+            self._popupWindow = None
+            self.refresh()
+
     def getSelectedCardName(self):
         for func,col in self._columns:
             if col == self._columns.getCol():
@@ -229,15 +236,6 @@ class TwistedDisplay(Display):
         else:
             self.setStatus('You tried to select a card from a column with an '+\
                     'unrecognized function')
-
-    def popUp(self,rowData=[],title='',cursor=True):
-        popCol = PopupColumn((1,24),title=title,height=self._termHeight-3,\
-                width=32)
-        popCol.setRowData(rowData)
-        pass
-
-    def closePopUp(self):
-        self.refresh()
 
     def setClient(self,client):
         self.client = client
@@ -270,9 +268,14 @@ class TwistedDisplay(Display):
         self.updateStashBar()
 
     def displayFullText(self,fullText):
-        tempCol = PopupColumn((1,24),title='Full Text',\
+        self._popupWindow = PopupColumn((1,24),title='Full Text',\
                 height=self._termHeight-3,width=32)
-        tempCol.setRowData(textwrap.wrap(fullText,31))
+        self._popupWindow.setRowData(textwrap.wrap(fullText,31))
+
+    def refresh(self):
+        Display.refresh(self)
+        if self._popupWindow is not None:
+            self._popupWindow.refresh()
 
     @property
     def hand(self):
