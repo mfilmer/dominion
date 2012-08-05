@@ -33,6 +33,7 @@ class StatusBar(object):
             self._horizOffset = 0
             prefix = ''
         else:
+            raise Exception(self._index)
             self._index += 1
             prefix = str(self._index) + ': '
         self._displayText(*self._statusHistory[-1],prefix=prefix)
@@ -47,7 +48,7 @@ class StatusBar(object):
     def scrollHistory(self,step):
         self._index += step
         self._horizOffset = 0
-        if self._index < 0:
+        if self._index <= 0:
             self._index = 0
         elif self._index > len(self._statusHistory)-1:
             self._index = len(self._statusHistory)-1
@@ -71,6 +72,8 @@ class StatusBar(object):
     #Implementation Functions
     #todo: finish
     def _displayText(self,text,attrs,prefix=''):
+        #if prefix == '0: ':
+            #raise Exception
         """Physically write the status as it should be displayed (including
         any offsets for scrolling. This also refreshes the curses window"""
         #i'm not really sure whats with the self._length-1, but its necessary
@@ -388,8 +391,8 @@ class Display(object):
             curses.init_pair(1,0,15)    #windows command prompt
             curses.init_pair(2,9,15)
             curses.init_pair(3,12,15)
-            curses.init_pair(4,10,15)
-        elif curses.COLORS == 8:        #this color set looks nice with my
+            curses.init_pair(4,14,15)
+        else:                           #this color set looks nice with my
             curses.use_default_colors() #current gnome-terminal color settings
             curses.init_pair(1,-1,-1)
             curses.init_pair(2,4,-1)
@@ -422,16 +425,20 @@ class Display(object):
         self.refresh()
 
     def refresh(self):
+        #clear the screen
         self._stdscr.erase()
         self._stdscr.refresh()
+        #redraw the borders
         self._borderWin.hline(1,0,curses.ACS_HLINE,80)
         self._borderWin.vline(2,26,curses.ACS_VLINE,self._termHeight-4)
         self._borderWin.vline(2,53,curses.ACS_VLINE,self._termHeight-4)
         self._borderWin.hline(self._termHeight-2,0,curses.ACS_HLINE,80)
         self._borderWin.refresh()
+        #redraw the title
         self.setTitle()
         for func,col in self._columns:
             col.refresh()
+        self._statusBar.scrollHistory(0)
         self._statusBar.refresh()
 
     def scroll(self,lines=1):
