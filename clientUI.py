@@ -428,15 +428,19 @@ class SelectionDialogue(PopupColumn):
         PopupColumn.refresh(self)
 
 class MultiSelectionDialogue(PopupWindow,StatusColumn):
-    def __init__(self,choices):
-        if len(choices) < 2:
-            raise ValueError
-        PopupWindow.__init__(self,(row,col),title,height,width)
-        Column.__init__(self,(row,col),title,height,width)
+    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+        PopupColumn.__init__(self,(row,col),title,height,width)
+        self._isActive = True
+        self._enableCursor = True
+
+    def selectionVertical(self,step):
+        self.moveCursor(step)
+
+    def submit(self):
+        return self.getMarkedText()
 
     def refresh(self):
-        PopupWindow.refresh(self)
-        Column.refresh(self)
+        PopupColumn.refresh(self)
 
 class YesNoWindow(PopupWindow):
     def __init__(self,choices):
