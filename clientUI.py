@@ -322,7 +322,7 @@ class Column(object):
 
     def _touch(self,row):
         self._verifyRow(row)
-        if row == self._selectedRow and self._isActive:
+        if row == self._selectedRow and self._isActive and self._enableCursor:
             self._pad.addstr(row,0,self._rowData[row][0], \
                     self._rowData[row][1] | curses.A_REVERSE)
         elif row in self._markedRows:
@@ -390,8 +390,14 @@ class PopupWindow(object):
     def scrollVertical(self,step):
         pass
 
+    def toggleSelectedMark(self):
+        pass
+
     def submit(self):
         pass
+
+    def escape(self):
+        return True
 
     def refresh(self):
         self._outlineWindow.border()
@@ -429,18 +435,31 @@ class SelectionDialogue(PopupColumn):
 
 class MultiSelectionDialogue(PopupWindow,StatusColumn):
     def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
-        PopupColumn.__init__(self,(row,col),title,height,width)
+        StatusColumn.__init__(self,(row,col),title,height,width)
         self._isActive = True
         self._enableCursor = True
 
     def selectionVertical(self,step):
         self.moveCursor(step)
+        
+    def toggleSelectedMark(self):
+        self.toggleMark(self._selectedRow)
 
     def submit(self):
         return self.getMarkedText()
 
+    def escape(self):
+        if len(self._markedRows) > 0:
+            rowBackup = self._markedRows
+            self._markedRows = set()
+            for row in rowBackup:
+                Column._touch(self,row)
+            self.refresh()
+            return False
+        return True
+
     def refresh(self):
-        PopupColumn.refresh(self)
+        StatusColumn.refresh(self)
 
 class YesNoWindow(PopupWindow):
     def __init__(self,choices):
