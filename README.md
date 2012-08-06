@@ -48,13 +48,9 @@ The server.py file should be run in order to start a game server. Options can be
 command line argumnets.
 
 --help      Show all command line arguments
-
 --players   Number of players that should be in the game
-
 --port      Port to listen on
-
 --workingCardsOnly    Only randomizes with cards that are flagged as working
-
 --expansions  List expansions to be in the pool of possible cards to play with
 
 The defaults are:
