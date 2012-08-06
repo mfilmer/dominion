@@ -343,20 +343,6 @@ class Column(object):
     def __len__(self):
         return len(self._rowData)
 
-class PopupColumn(Column):
-    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
-        Column.__init__(self,(row,col),title,height,width)
-        #base column
-        self._isActive = True
-        self._outlineWindow = curses.newwin(height+2,width+2,row-1,col-1)
-        self._outlineWindow.bkgd(' ',curses.color_pair(4))
-        self._outlineWindow.border()
-        self.refresh()
-
-    def refresh(self):
-        self._outlineWindow.refresh()
-        Column.refresh(self)
-
 class StatusColumn(Column):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         Column.__init__(self,(row,col),title,height,width)
@@ -381,8 +367,17 @@ class StatusColumn(Column):
         self._statusBar.refresh()
 
 class PopupWindow(object):
-    def __init__(self):
-        pass
+    def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
+        self._borderHeight = height+2
+        self._borderWidth = width+2
+        self._borderRow = row-1
+        self._borderCol = col-1
+        self._height = height
+        self._width = width
+        self._row = row
+        self._col = col
+        self._outlineWindow = curses.newwin(height+2,width+2,row-1,col-1)
+        self._outlineWindow.bkgd(' ',curses.color_pair(4))
 
     def selectionVertical(self,step):
         pass
@@ -390,8 +385,20 @@ class PopupWindow(object):
     def selectionHorizontal(self,step):
         pass
 
-    def refresh():
-        pass
+    def refresh(self):
+        self._outlineWindow.border()
+        self._outlineWindow.refresh()
+
+class PopupColumn(PopupWindow,Column):
+    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+        PopupWindow.__init__(self,(row,col),title,height,width)
+        Column.__init__(self,(row,col),title,height,width)
+        self._isActive = True
+        self.refresh()
+
+    def refresh(self):
+        PopupWindow.refresh(self)
+        Column.refresh(self)
 
 class YesNoWindow(PopupWindow):
     def __init__(self,choices):
