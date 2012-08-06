@@ -184,11 +184,21 @@ class Column(object):
         #self.setTitle(title)
 
     def refresh(self):
+        self._refreshBorder()
+        self._refreshTitle()
+        self._refreshPad()
+
+    def _refreshTitle(self):
+        self._titleWindow.erase()
+        self._titleWindow.addstr(0,0,*self._title)
+        self._titleWindow.refresh()
+
+    def _refreshBorder(self):
         self._borderWindow.hline(0,0,curses.ACS_HLINE | curses.color_pair(1), \
                 self._width)
         self._borderWindow.refresh()
-        self._titleWindow.addstr(0,0,*self._title)
-        self._titleWindow.refresh()
+
+    def _refreshPad(self):
         self._pad.refresh(self._scrollOffset,0,self._row + 2,self._col,\
                 self._row + self._visibleRows + 1,self._width + self._col)
 
@@ -205,8 +215,7 @@ class Column(object):
         else:
             raise ValueError("tAlign must be 'Left','Center', or 'Right'")
         self._title = (title,attrs)
-        self._titleWindow.addstr(0,0,*self._title)
-        self.refresh()
+        self._refreshTitle()
 
     def isActive(self):
         return self._isActive
@@ -218,7 +227,7 @@ class Column(object):
                 self._touch(self._selectedRow)
             else:
                 self._deselect(self._selectedRow)
-            self.refresh()
+            self._refreshPad()
 
     def setRowData(self,rowData,attrs=None,reset=True):
         if attrs is None:
@@ -245,7 +254,7 @@ class Column(object):
             else:
                 self._pad.addstr(i,0,text[0:self._width-1],attrs)
         
-        self.refresh()
+        self._refreshPad()
 
     #navigation functions
     def scroll(self,lines=1):
@@ -258,7 +267,7 @@ class Column(object):
                 self._scrollOffset = len(self._rowData) - self._visibleRows
         else:
             self._scrollOffset += lines
-        self.refresh()
+        self._refreshPad()
 
     def moveCursor(self,lines=1):
         if self._enableCursor:
@@ -280,7 +289,7 @@ class Column(object):
         else:
             self._markedRows.add(row)
         self._touch(row)
-        self.refresh()
+        self._refreshPad()
 
     def setMark(self,row,marked=True):
         self._verifyRow(row)
@@ -289,7 +298,7 @@ class Column(object):
         else:
             self._markedRows.remove(row)
         self._touch(row)
-        self.refresh()
+        self._refreshPad()
 
     def getMarkedText(self):
         return [self._rowData[i] for i in range(len(self._rowData)) if i in \
@@ -369,7 +378,7 @@ class StatusColumn(Column):
         self._statusBar.refresh()
 
 class PopupWindow(object):
-    def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
+    def __init__(self,(row,col)=(0,0),height=20,width=26):
         self._borderHeight = height
         self._borderWidth = width
         self._borderRow = row
@@ -405,7 +414,7 @@ class PopupWindow(object):
 
 class PopupColumn(PopupWindow,Column):
     def __init__(self,(row,col)=(0,23),title='',height=24,width=34):
-        PopupWindow.__init__(self,(row,col),title,height,width)
+        PopupWindow.__init__(self,(row,col),height,width)
         Column.__init__(self,(self._row,self._col),title,self._height,self._width)
         self._isActive = True
         self._enableCursor = False
@@ -435,7 +444,7 @@ class SelectionDialogue(PopupColumn):
 
 class MultiSelectionDialogue(PopupWindow,StatusColumn):
     def __init__(self,(row,col)=(1,24),title='',height=20,width=32):
-        PopupWindow.__init__(self,(row,col),title,height,width)
+        PopupWindow.__init__(self,(row,col),height,width)
         StatusColumn.__init__(self,(self._row,self._col),title,self._height,\
                 self._width)
         self._isActive = True
@@ -468,10 +477,20 @@ class MultiSelectionDialogue(PopupWindow,StatusColumn):
         StatusColumn.refresh(self)
 
 class YesNoWindow(PopupWindow):
-    def __init__(self,choices,(row,col)=(5,24),title='',height=10,width=50):
+    def __init__(self,choices=('yes','no'),(row,col)=(5,24),title='',\
+            height=10,width=50):
         if len(choices) != 2:
             raise ValueError
-        PopupWindow.__init__(self,(row,col),title,height,width)
+        PopupWindow.__init__(self,(row,col),height,width)
+        self._choices = ('{:^9}'.format(choices[0]),\
+                    '{:^9}'.format(choices[1]))
+        self._window = curses.newwin(self._height,self._width,self._row,\
+                self._col)
+        self._window.bkgd(' ',curses.color_pair(1))
+        self._index = 0
+
+    def selectionHorizontal(self,value):
+        pass
 
     def refresh(self):
         PopupWindow.refresh(self)
@@ -487,7 +506,7 @@ class Display(object):
             curses.init_pair(1,0,15)    #windows command prompt
             curses.init_pair(2,9,15)
             curses.init_pair(3,12,15)
-            curses.init_pair(4,14,15)
+            curses.init_pair(4,11,15)
         else:                           #this color set looks nice with my
             curses.use_default_colors() #current gnome-terminal color settings
             curses.init_pair(1,-1,-1)
