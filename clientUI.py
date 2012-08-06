@@ -158,6 +158,7 @@ class Column(object):
         #row data
         self._rowData = []
         self._isActive = False
+        self._enableCursor = True
 
         #physical dimensions and location
         self._height = height
@@ -238,7 +239,7 @@ class Column(object):
         del(self._pad)
         self._newPad(len(self._rowData))
         for i,(text,attrs) in enumerate(self._rowData):
-            if i == self._selectedRow and self._isActive:
+            if i == self._selectedRow and self._isActive and self._enableCursor:
                 self._pad.addstr(i,0,text[0:self._width-1],attrs | \
                         curses.A_REVERSE)
             else:
@@ -260,15 +261,16 @@ class Column(object):
         self.refresh()
 
     def moveCursor(self,lines=1):
-        self._deselect(self._selectedRow)
-        if self._selectedRow + lines < 0:
-            self._selectedRow = 0
-        elif self._selectedRow + lines >= len(self._rowData):
-            self._selectedRow = len(self._rowData) - 1
-        else:
-            self._selectedRow += lines
-        self._touch(self._selectedRow)
-        self.scroll(self._getSelectionOffset())
+        if self._enableCursor:
+            self._deselect(self._selectedRow)
+            if self._selectedRow + lines < 0:
+                self._selectedRow = 0
+            elif self._selectedRow + lines >= len(self._rowData):
+                self._selectedRow = len(self._rowData) - 1
+            else:
+                self._selectedRow += lines
+            self._touch(self._selectedRow)
+            self.scroll(self._getSelectionOffset())
 
     #row marking
     def toggleMark(self,row):
@@ -385,6 +387,12 @@ class PopupWindow(object):
     def selectionHorizontal(self,step):
         pass
 
+    def scrollVertical(self,step):
+        pass
+
+    def submit(self):
+        pass
+
     def refresh(self):
         self._outlineWindow.border()
         self._outlineWindow.refresh()
@@ -394,7 +402,37 @@ class PopupColumn(PopupWindow,Column):
         PopupWindow.__init__(self,(row,col),title,height,width)
         Column.__init__(self,(row,col),title,height,width)
         self._isActive = True
+        self._enableCursor = False
         self.refresh()
+
+    def scrollVertical(self,step):
+        self.scroll(step)
+
+    def refresh(self):
+        PopupWindow.refresh(self)
+        Column.refresh(self)
+
+class SelectionDialogue(PopupColumn):
+    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+        PopupColumn.__init__(self,(row,col),title,height,width)
+        self._isActive = True
+        self._enableCursor = True
+
+    def selectionVertical(self,step):
+        self.moveCursor(step)
+
+    def submit(self):
+        return self.getSelectedText()
+
+    def refresh(self):
+        PopupColumn.refresh(self)
+
+class MultiSelectionDialogue(PopupWindow,StatusColumn):
+    def __init__(self,choices):
+        if len(choices) < 2:
+            raise ValueError
+        PopupWindow.__init__(self,(row,col),title,height,width)
+        Column.__init__(self,(row,col),title,height,width)
 
     def refresh(self):
         PopupWindow.refresh(self)
@@ -404,18 +442,10 @@ class YesNoWindow(PopupWindow):
     def __init__(self,choices):
         if len(choices) != 2:
             raise ValueError
+        PopupWindow.__init__(self,(row,col),title,height,width)
 
-class SelectionDialogue(PopupWindow,Column):
-    def __init__(self,choices):
-        if len(choices) < 2:
-            raise ValueError
-        Column.__init__(self)
-
-class MultiSelectionDialogue(PopupWindow,StatusColumn):
-    def __init__(self,choices):
-        if len(choices) < 2:
-            raise ValueError
-        Column.__init__(self)
+    def refresh(self):
+        PopupWindow.refresh(self)
 
 class Display(object):
     def __init__(self,stdscr):

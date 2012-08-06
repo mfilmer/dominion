@@ -179,7 +179,7 @@ class victory6(Card):
         self._playablePhases = []
         self._types = ['Victory']
         self._fullText = '6 VP'
-        
+
 class victory10(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)

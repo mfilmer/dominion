@@ -138,6 +138,10 @@ class TwistedDisplay(Display):
 
         if self._popupWindow is not None:
             self.handlePopupKey(char)
+        elif char == ord('x'):
+            self._popupWindow = SelectionDialogue((1,24),title='Choose',\
+                    height=self._termHeight-3,width=32)
+            self._popupWindow.setRowData(['row '+str(x)for x in range(20)])
         elif char == 27:            #ESC key
             pass
         elif char == curses.KEY_NPAGE:
@@ -225,6 +229,21 @@ class TwistedDisplay(Display):
         if char == 27:          #ESC key
             self._popupWindow = None
             self.refresh()
+        elif char == curses.KEY_NPAGE:
+            self._popupWindow.scrollVertical(1)
+        elif char == curses.KEY_PPAGE:
+            self._popupWindow.scrollVertical(-1)
+        elif char == curses.KEY_UP:
+            self._popupWindow.selectionVertical(-1)
+        elif char == curses.KEY_DOWN:
+            self._popupWindow.selectionVertical(1)
+        elif char == ord('\n'):
+            self.handlePopupSubmit(self._popupWindow.submit())
+
+    def handlePopupSubmit(self,value):
+        #do some stuff
+        #probably end by closing the popup
+        pass
 
     def getSelectedCardName(self):
         for func,col in self._columns:
