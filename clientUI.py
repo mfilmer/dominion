@@ -234,9 +234,9 @@ class Column(object):
             attrs = [curses.color_pair(1)]*len(rowData)
         self._rowData = zip(rowData,attrs)
         
-        #clear the screen
+        #clear the pad
         self._pad.erase()
-        self.refresh()
+        self._refreshPad()
 
         #clear marked and selected rows
         self._markedRows = set()
@@ -373,9 +373,9 @@ class StatusColumn(Column):
     def refresh(self):
         Column.refresh(self)
         self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
-        self.setStatus()
         self._statBar.refresh()
-        self._statusBar.refresh()
+        self.setStatus()
+        #self._statusBar.refresh()
 
 class PopupWindow(object):
     def __init__(self,(row,col)=(0,0),height=20,width=26):
@@ -488,6 +488,7 @@ class YesNoWindow(PopupWindow):
                 self._col)
         self._window.bkgd(' ',curses.color_pair(1))
         self._index = 0
+        self.refresh()
 
     def selectionHorizontal(self,value):
         pass

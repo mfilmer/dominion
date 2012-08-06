@@ -139,10 +139,10 @@ class TwistedDisplay(Display):
         if self._popupWindow is not None:
             self.handlePopupKey(char)
         elif char == ord('x'):
-            self._popupWindow = YesNoWindow()
-            #self._popupWindow = MultiSelectionDialogue((0,24),title='Choose',\
-                    #height=self._termHeight-1,width=32)
-            #self._popupWindow.setRowData(['row '+str(x)for x in range(25)])
+            #self._popupWindow = YesNoWindow()
+            self._popupWindow = SelectionDialogue((0,24),title='Choose',\
+                    height=self._termHeight-1,width=32)
+            self._popupWindow.setRowData(['row '+str(x)for x in range(25)])
         elif char == 27:            #ESC key
             pass
         elif char == curses.KEY_NPAGE:
