@@ -370,15 +370,15 @@ class StatusColumn(Column):
 
 class PopupWindow(object):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
-        self._borderHeight = height+2
-        self._borderWidth = width+2
-        self._borderRow = row-1
-        self._borderCol = col-1
-        self._height = height
-        self._width = width
-        self._row = row
-        self._col = col
-        self._outlineWindow = curses.newwin(height+2,width+2,row-1,col-1)
+        self._borderHeight = height
+        self._borderWidth = width
+        self._borderRow = row
+        self._borderCol = col
+        self._height = height-2
+        self._width = width-2
+        self._row = row+1
+        self._col = col+1
+        self._outlineWindow = curses.newwin(height,width,row,col)
         self._outlineWindow.bkgd(' ',curses.color_pair(4))
 
     def selectionVertical(self,step):
@@ -404,9 +404,9 @@ class PopupWindow(object):
         self._outlineWindow.refresh()
 
 class PopupColumn(PopupWindow,Column):
-    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+    def __init__(self,(row,col)=(0,23),title='',height=24,width=34):
         PopupWindow.__init__(self,(row,col),title,height,width)
-        Column.__init__(self,(row,col),title,height,width)
+        Column.__init__(self,(self._row,self._col),title,self._height,self._width)
         self._isActive = True
         self._enableCursor = False
         self.refresh()
@@ -419,7 +419,7 @@ class PopupColumn(PopupWindow,Column):
         Column.refresh(self)
 
 class SelectionDialogue(PopupColumn):
-    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
+    def __init__(self,(row,col)=(1,24),title='',height=20,width=32):
         PopupColumn.__init__(self,(row,col),title,height,width)
         self._isActive = True
         self._enableCursor = True
@@ -434,13 +434,18 @@ class SelectionDialogue(PopupColumn):
         PopupColumn.refresh(self)
 
 class MultiSelectionDialogue(PopupWindow,StatusColumn):
-    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
-        StatusColumn.__init__(self,(row,col),title,height,width)
+    def __init__(self,(row,col)=(1,24),title='',height=20,width=32):
+        PopupWindow.__init__(self,(row,col),title,height,width)
+        StatusColumn.__init__(self,(self._row,self._col),title,self._height,\
+                self._width)
         self._isActive = True
         self._enableCursor = True
 
     def selectionVertical(self,step):
         self.moveCursor(step)
+
+    def scrollVertical(self,step):
+        self.scroll(step)
         
     def toggleSelectedMark(self):
         self.toggleMark(self._selectedRow)
@@ -459,10 +464,11 @@ class MultiSelectionDialogue(PopupWindow,StatusColumn):
         return True
 
     def refresh(self):
+        PopupWindow.refresh(self)
         StatusColumn.refresh(self)
 
 class YesNoWindow(PopupWindow):
-    def __init__(self,choices):
+    def __init__(self,choices,(row,col)=(5,24),title='',height=10,width=50):
         if len(choices) != 2:
             raise ValueError
         PopupWindow.__init__(self,(row,col),title,height,width)
