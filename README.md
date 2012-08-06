@@ -31,11 +31,8 @@ The client.py file should be run in order to connect to an existing server. Opti
 specified in command line arguments
 
 --help    Show all command line arguments
-
 --name    Name to play with
-
 --port    Port to connect to on the server
-
 --address Address of the server to connect to
 
 These options have defaults as follows:
