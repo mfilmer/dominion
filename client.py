@@ -138,6 +138,11 @@ class TwistedDisplay(Display):
 
         if self._popupWindow is not None:
             self.handlePopupKey(char)
+        elif char == ord('x'):
+            self._popupWindow = YesNoWindow()
+            #self._popupWindow = SelectionDialogue(title='Choose',\
+                    #height=self._termHeight-1)
+            #self._popupWindow.setRowData(['row '+str(x)for x in range(25)])
         elif char == 27:            #ESC key
             pass
         elif char == curses.KEY_NPAGE:
@@ -223,8 +228,26 @@ class TwistedDisplay(Display):
 
     def handlePopupKey(self,char):
         if char == 27:          #ESC key
-            self._popupWindow = None
-            self.refresh()
+            if self._popupWindow.escape():
+                self._popupWindow = None
+                self.refresh()
+        elif char == curses.KEY_NPAGE:
+            self._popupWindow.scrollVertical(1)
+        elif char == curses.KEY_PPAGE:
+            self._popupWindow.scrollVertical(-1)
+        elif char == curses.KEY_UP:
+            self._popupWindow.selectionVertical(-1)
+        elif char == curses.KEY_DOWN:
+            self._popupWindow.selectionVertical(1)
+        elif char == ord('\n'):
+            self.handlePopupSubmit(self._popupWindow.submit())
+        elif char == ord(' '):
+            self._popupWindow.toggleSelectedMark()
+
+    def handlePopupSubmit(self,value):
+        #do some stuff
+        #probably end by closing the popup
+        pass
 
     def getSelectedCardName(self):
         for func,col in self._columns:
@@ -270,8 +293,8 @@ class TwistedDisplay(Display):
         self.updateStashBar()
 
     def displayFullText(self,fullText):
-        self._popupWindow = PopupColumn((1,24),title='Full Text',\
-                height=self._termHeight-3,width=32)
+        self._popupWindow = PopupColumn(title='Full Text',\
+                height=self._termHeight-1)
         self._popupWindow.setRowData(textwrap.wrap(fullText,31))
 
     def refresh(self):

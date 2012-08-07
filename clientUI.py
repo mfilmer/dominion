@@ -158,6 +158,7 @@ class Column(object):
         #row data
         self._rowData = []
         self._isActive = False
+        self._enableCursor = True
 
         #physical dimensions and location
         self._height = height
@@ -183,11 +184,21 @@ class Column(object):
         #self.setTitle(title)
 
     def refresh(self):
+        self._refreshBorder()
+        self._refreshTitle()
+        self._refreshPad()
+
+    def _refreshTitle(self):
+        self._titleWindow.erase()
+        self._titleWindow.addstr(0,0,*self._title)
+        self._titleWindow.refresh()
+
+    def _refreshBorder(self):
         self._borderWindow.hline(0,0,curses.ACS_HLINE | curses.color_pair(1), \
                 self._width)
         self._borderWindow.refresh()
-        self._titleWindow.addstr(0,0,*self._title)
-        self._titleWindow.refresh()
+
+    def _refreshPad(self):
         self._pad.refresh(self._scrollOffset,0,self._row + 2,self._col,\
                 self._row + self._visibleRows + 1,self._width + self._col)
 
@@ -204,8 +215,7 @@ class Column(object):
         else:
             raise ValueError("tAlign must be 'Left','Center', or 'Right'")
         self._title = (title,attrs)
-        self._titleWindow.addstr(0,0,*self._title)
-        self.refresh()
+        self._refreshTitle()
 
     def isActive(self):
         return self._isActive
@@ -217,16 +227,16 @@ class Column(object):
                 self._touch(self._selectedRow)
             else:
                 self._deselect(self._selectedRow)
-            self.refresh()
+            self._refreshPad()
 
     def setRowData(self,rowData,attrs=None,reset=True):
         if attrs is None:
             attrs = [curses.color_pair(1)]*len(rowData)
         self._rowData = zip(rowData,attrs)
         
-        #clear the screen
+        #clear the pad
         self._pad.erase()
-        self.refresh()
+        self._refreshPad()
 
         #clear marked and selected rows
         self._markedRows = set()
@@ -238,13 +248,13 @@ class Column(object):
         del(self._pad)
         self._newPad(len(self._rowData))
         for i,(text,attrs) in enumerate(self._rowData):
-            if i == self._selectedRow and self._isActive:
+            if i == self._selectedRow and self._isActive and self._enableCursor:
                 self._pad.addstr(i,0,text[0:self._width-1],attrs | \
                         curses.A_REVERSE)
             else:
                 self._pad.addstr(i,0,text[0:self._width-1],attrs)
         
-        self.refresh()
+        self._refreshPad()
 
     #navigation functions
     def scroll(self,lines=1):
@@ -257,18 +267,19 @@ class Column(object):
                 self._scrollOffset = len(self._rowData) - self._visibleRows
         else:
             self._scrollOffset += lines
-        self.refresh()
+        self._refreshPad()
 
     def moveCursor(self,lines=1):
-        self._deselect(self._selectedRow)
-        if self._selectedRow + lines < 0:
-            self._selectedRow = 0
-        elif self._selectedRow + lines >= len(self._rowData):
-            self._selectedRow = len(self._rowData) - 1
-        else:
-            self._selectedRow += lines
-        self._touch(self._selectedRow)
-        self.scroll(self._getSelectionOffset())
+        if self._enableCursor:
+            self._deselect(self._selectedRow)
+            if self._selectedRow + lines < 0:
+                self._selectedRow = 0
+            elif self._selectedRow + lines >= len(self._rowData):
+                self._selectedRow = len(self._rowData) - 1
+            else:
+                self._selectedRow += lines
+            self._touch(self._selectedRow)
+            self.scroll(self._getSelectionOffset())
 
     #row marking
     def toggleMark(self,row):
@@ -278,7 +289,7 @@ class Column(object):
         else:
             self._markedRows.add(row)
         self._touch(row)
-        self.refresh()
+        self._refreshPad()
 
     def setMark(self,row,marked=True):
         self._verifyRow(row)
@@ -287,7 +298,7 @@ class Column(object):
         else:
             self._markedRows.remove(row)
         self._touch(row)
-        self.refresh()
+        self._refreshPad()
 
     def getMarkedText(self):
         return [self._rowData[i] for i in range(len(self._rowData)) if i in \
@@ -320,7 +331,7 @@ class Column(object):
 
     def _touch(self,row):
         self._verifyRow(row)
-        if row == self._selectedRow and self._isActive:
+        if row == self._selectedRow and self._isActive and self._enableCursor:
             self._pad.addstr(row,0,self._rowData[row][0], \
                     self._rowData[row][1] | curses.A_REVERSE)
         elif row in self._markedRows:
@@ -343,20 +354,6 @@ class Column(object):
     def __len__(self):
         return len(self._rowData)
 
-class PopupColumn(Column):
-    def __init__(self,(row,col)=(1,1),title='',height=20,width=26):
-        Column.__init__(self,(row,col),title,height,width)
-        #base column
-        self._isActive = True
-        self._outlineWindow = curses.newwin(height+2,width+2,row-1,col-1)
-        self._outlineWindow.bkgd(' ',curses.color_pair(4))
-        self._outlineWindow.border()
-        self.refresh()
-
-    def refresh(self):
-        self._outlineWindow.refresh()
-        Column.refresh(self)
-
 class StatusColumn(Column):
     def __init__(self,(row,col)=(0,0),title='',height=20,width=26):
         Column.__init__(self,(row,col),title,height,width)
@@ -376,13 +373,22 @@ class StatusColumn(Column):
     def refresh(self):
         Column.refresh(self)
         self._statBar.hline(0,0,curses.ACS_HLINE,self._width)
-        self.setStatus()
         self._statBar.refresh()
-        self._statusBar.refresh()
+        self.setStatus()
+        #self._statusBar.refresh()
 
 class PopupWindow(object):
-    def __init__(self):
-        pass
+    def __init__(self,(row,col)=(0,0),height=20,width=26):
+        self._borderHeight = height
+        self._borderWidth = width
+        self._borderRow = row
+        self._borderCol = col
+        self._height = height-2
+        self._width = width-2
+        self._row = row+1
+        self._col = col+1
+        self._outlineWindow = curses.newwin(height,width,row,col)
+        self._outlineWindow.bkgd(' ',curses.color_pair(4))
 
     def selectionVertical(self,step):
         pass
@@ -390,25 +396,107 @@ class PopupWindow(object):
     def selectionHorizontal(self,step):
         pass
 
-    def refresh():
+    def scrollVertical(self,step):
         pass
 
-class YesNoWindow(PopupWindow):
-    def __init__(self,choices):
-        if len(choices) != 2:
-            raise ValueError
+    def toggleSelectedMark(self):
+        pass
 
-class SelectionDialogue(PopupWindow,Column):
-    def __init__(self,choices):
-        if len(choices) < 2:
-            raise ValueError
-        Column.__init__(self)
+    def submit(self):
+        pass
+
+    def escape(self):
+        return True
+
+    def refresh(self):
+        self._outlineWindow.border()
+        self._outlineWindow.refresh()
+
+class PopupColumn(PopupWindow,Column):
+    def __init__(self,(row,col)=(0,24),title='',height=10,width=32):
+        PopupWindow.__init__(self,(row,col),height,width)
+        Column.__init__(self,(self._row,self._col),title,self._height,self._width)
+        self._isActive = True
+        self._enableCursor = False
+        self.refresh()
+
+    def scrollVertical(self,step):
+        self.scroll(step)
+
+    def refresh(self):
+        PopupWindow.refresh(self)
+        Column.refresh(self)
+
+class SelectionDialogue(PopupColumn):
+    def __init__(self,(row,col)=(0,24),title='',height=10,width=32):
+        PopupColumn.__init__(self,(row,col),title,height,width)
+        self._isActive = True
+        self._enableCursor = True
+
+    def selectionVertical(self,step):
+        self.moveCursor(step)
+
+    def submit(self):
+        return self.getSelectedText()
+
+    def refresh(self):
+        PopupColumn.refresh(self)
 
 class MultiSelectionDialogue(PopupWindow,StatusColumn):
-    def __init__(self,choices):
-        if len(choices) < 2:
+    def __init__(self,(row,col)=(1,24),title='',height=20,width=32):
+        PopupWindow.__init__(self,(row,col),height,width)
+        StatusColumn.__init__(self,(self._row,self._col),title,self._height,\
+                self._width)
+        self._isActive = True
+        self._enableCursor = True
+
+    def selectionVertical(self,step):
+        self.moveCursor(step)
+
+    def scrollVertical(self,step):
+        self.scroll(step)
+        
+    def toggleSelectedMark(self):
+        self.toggleMark(self._selectedRow)
+
+    def submit(self):
+        return self.getMarkedText()
+
+    def escape(self):
+        if len(self._markedRows) > 0:
+            rowBackup = self._markedRows
+            self._markedRows = set()
+            for row in rowBackup:
+                Column._touch(self,row)
+            self.refresh()
+            return False
+        return True
+
+    def refresh(self):
+        PopupWindow.refresh(self)
+        StatusColumn.refresh(self)
+
+class YesNoWindow(PopupWindow):
+    def __init__(self,choices=('yes','no'),(row,col)=(5,10),prompt='',\
+            height=13,width=60):
+        if len(choices) != 2:
             raise ValueError
-        Column.__init__(self)
+        PopupWindow.__init__(self,(row,col),height,width)
+        self._choices = ('{0:^9}'.format(choices[0]),\
+                    '{0:^9}'.format(choices[1]))
+        self._window = curses.newwin(self._height,self._width,self._row,\
+                self._col)
+        self._window.bkgd(' ',curses.color_pair(1))
+        self._index = 0
+        self._prompt = prompt
+        #self._promptWindow = curses.newwin()
+        self.refresh()
+
+    def selectionHorizontal(self,value):
+        pass
+
+    def refresh(self):
+        PopupWindow.refresh(self)
 
 class Display(object):
     def __init__(self,stdscr):
@@ -421,7 +509,7 @@ class Display(object):
             curses.init_pair(1,0,15)    #windows command prompt
             curses.init_pair(2,9,15)
             curses.init_pair(3,12,15)
-            curses.init_pair(4,14,15)
+            curses.init_pair(4,11,15)
         else:                           #this color set looks nice with my
             curses.use_default_colors() #current gnome-terminal color settings
             curses.init_pair(1,-1,-1)
