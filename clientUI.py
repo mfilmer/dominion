@@ -413,7 +413,7 @@ class PopupWindow(object):
         self._outlineWindow.refresh()
 
 class PopupColumn(PopupWindow,Column):
-    def __init__(self,(row,col)=(0,23),title='',height=24,width=34):
+    def __init__(self,(row,col)=(0,24),title='',height=10,width=32):
         PopupWindow.__init__(self,(row,col),height,width)
         Column.__init__(self,(self._row,self._col),title,self._height,self._width)
         self._isActive = True
@@ -428,7 +428,7 @@ class PopupColumn(PopupWindow,Column):
         Column.refresh(self)
 
 class SelectionDialogue(PopupColumn):
-    def __init__(self,(row,col)=(1,24),title='',height=20,width=32):
+    def __init__(self,(row,col)=(0,24),title='',height=10,width=32):
         PopupColumn.__init__(self,(row,col),title,height,width)
         self._isActive = True
         self._enableCursor = True
@@ -477,17 +477,19 @@ class MultiSelectionDialogue(PopupWindow,StatusColumn):
         StatusColumn.refresh(self)
 
 class YesNoWindow(PopupWindow):
-    def __init__(self,choices=('yes','no'),(row,col)=(5,24),title='',\
-            height=10,width=50):
+    def __init__(self,choices=('yes','no'),(row,col)=(5,10),prompt='',\
+            height=13,width=60):
         if len(choices) != 2:
             raise ValueError
         PopupWindow.__init__(self,(row,col),height,width)
-        self._choices = ('{:^9}'.format(choices[0]),\
-                    '{:^9}'.format(choices[1]))
+        self._choices = ('{0:^9}'.format(choices[0]),\
+                    '{0:^9}'.format(choices[1]))
         self._window = curses.newwin(self._height,self._width,self._row,\
                 self._col)
         self._window.bkgd(' ',curses.color_pair(1))
         self._index = 0
+        self._prompt = prompt
+        #self._promptWindow = curses.newwin()
         self.refresh()
 
     def selectionHorizontal(self,value):
