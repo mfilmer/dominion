@@ -3,7 +3,7 @@ from __future__ import print_function
 import random
 
 from errors import *
-from cards import *
+#from cards import *    #pretty sure we don't need this import
 from cardList import *
 from piles import *
 

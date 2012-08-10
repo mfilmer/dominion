@@ -86,7 +86,6 @@ class Card(object):
         return self._cost
 
 #Base Treasure
-#todo: figure out how to make gold cards not use up actions
 class gold1(Card):
     def __init__(self,pile):
         Card.__init__(self,pile)
