@@ -23,9 +23,12 @@ class Card(object):
         #things the card can do when played
         self._effects = {'money':0,'cards':0,'actions':0,'buys':0}
 
-    def play(self,extraData):
-        self.move(self._pile.getOwner().getDeck().getField())
+    def play(self):
         self._specialActions(extraData)
+
+    #dummy method. overwrite in child classes
+    def continue(self,data):
+        raise NotImplemented
 
     def move(self,destPile):
         self._pile._cards.remove(self)
@@ -71,11 +74,12 @@ class Card(object):
     def getFullText(self):
         return self._fullText
 
-    def _specialActions(self,extraData):
+    def _specialActions(self):
         """Dummy method that should be overridden in child classes who do 
         something other than cause the player to draw cards, gain money, gain 
         extra actions, or gain extra buys."""
-        pass
+        self.move(self._pile.getOwner().getDeck().getField())
+        return True
 
     @property
     def victoryPoints(self):
@@ -237,6 +241,7 @@ class cellar(Card):
             tmpPile[0].move(discard)
         for i in range(cardsToDraw):
             deck.draw()
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class chapel(Card):
     def __init__(self,pile):
@@ -265,6 +270,7 @@ class chapel(Card):
             raise
         while len(tmpPile):
             tmpPile[0].move(trash)
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class moat(Card):
     def __init__(self,pile):
@@ -305,6 +311,7 @@ You may immediately put your deck into your discard pile.'
             pass
         else:
             raise ValueError
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class village(Card):
     def __init__(self,pile):
@@ -347,6 +354,7 @@ class workshop(Card):
             raise ValueError
         player = self._pile.getOwner()
         store.buy(player)
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class bureaucrat(Card):
     def __init__(self,pile):
@@ -382,6 +390,7 @@ $5'
             raise ValueError
         store.buy(player)
         self.move(game.getTrash())
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class gardens(Card):
     def __init__(self,pile):
@@ -430,6 +439,7 @@ class moneylender(Card):
         copper = hand.getCardByName('Copper')
         copper.move(trash)
         turn._addMoney(3)
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class remodel(Card):
     def __init__(self,pile):
@@ -463,6 +473,7 @@ costing up to $2 more than the trashed card'
             raise ValueError
         store.buy(player)
         trashCard.move(trash)
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class smithy(Card):
     def __init__(self,pile):
@@ -522,6 +533,7 @@ card'
         for player in players:
             if player != owner:
                 player.drawCard()
+        self.move(self._pile.getOwner().getDeck().getField())
 
 class festival(Card):
     def __init__(self,pile):
@@ -597,6 +609,7 @@ a Treasure card costing up to $3 more; put it into your hand.'
         targetStore.buy(player)
         card = deck.getDiscard().getCardByName(targetCardName)
         card.move(hand)
+        self.move(self._pile.getOwner().getDeck().getField())
 
 
 class witch(Card):
@@ -648,6 +661,7 @@ and discard the other revealed cards'
                 card.move(hand)
             else:
                 card.move(discard)
+        self.move(self._pile.getOwner().getDeck().getField())
 ### Intrigue
 class courtyard(Card):
     def __init__(self,pile):
